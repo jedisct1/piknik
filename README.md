@@ -117,6 +117,7 @@ Sample shell aliases:
 
 ```bash
 pko() { echo "$*" | piknik -copy }
+pkf() { piknik -copy < $1 }
 alias pkc='piknik -copy'
 alias pkp='piknik -paste'
 ```
