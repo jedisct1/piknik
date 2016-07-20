@@ -7,10 +7,11 @@ Ever needed a copy/paste clipboard that works over the network?
 Piknik seamlessly transfers URLs, code snipppets, documents, virtually anything, between (possibly firewalled) hosts.
 No SSH needed.
 
-Fill in the clipboard ("copy") on host `A` with whatever comes in to the standard input:
+Fill in the clipboard ("copy") a host with whatever comes in to the standard input:
 
 ```bash
-$ echo clipboard content | pkc
+$ pkc
+clipboard content
 ```
 
 Magically retrieve that content from any other host having Piknik installed:
@@ -21,6 +22,13 @@ clipboard content
 ```
 
 Boom.
+
+Obviously, it can be used to transfer files as well:
+
+```bash
+$ pkc < kitten.gif
+$ pkp > kittencopy.gif
+```
 
 In order to bypass firewalls/NAT gatways and to provide persistence, the clipboard content transits via a staging server.
 
@@ -105,6 +113,7 @@ Wait. Where are the `pkc` and `pkp` commands describer earlier?
 Shell aliases:
 
 ```bash
+pko() { echo "$*" | piknik -copy }
 alias pkc='piknik -copy'
 alias pkp='piknik -paste'
 ```
