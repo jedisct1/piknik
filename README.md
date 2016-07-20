@@ -39,8 +39,11 @@ Oh, and nothing transits without end-to-end encryption and authentication. And d
 This project is written in Go. So, a Go compiler is required, as well as the following incantation:
 
 ```bash
+$ export GOPATH=${GOPATH:-~/go} ; mkdir -p $GOPATH
 $ go get github.com/jedisct1/piknik
 ```
+
+The `piknik` should then be available in `$GOPATH/bin`.
 
 ## Setup
 
