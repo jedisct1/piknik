@@ -8,8 +8,8 @@
 			"Rev": "5c4df71dfe9ac89ef6287afc05e4c1b16ae65a1e"
 		},
 		{
-			"ImportPath": "github.com/codahale/blake2",
-			"Rev": "8d10d0420cbfbdc9c1164c0c4ad3457a6c3771b9"
+			"ImportPath": "github.com/minio/blake2b-simd",
+			"Rev": "959f72aaa5d59f6956ee163ea3ad596975cd8d23"
 		},
 		{
 			"ImportPath": "github.com/mitchellh/go-homedir",

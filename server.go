@@ -9,7 +9,8 @@ import (
 	"log"
 	"net"
 
-	"github.com/codahale/blake2"
+	"github.com/minio/blake2b-simd"
+
 	"golang.org/x/crypto/ed25519"
 )
 
@@ -19,11 +20,11 @@ func getOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Writ
 		return
 	}
 	h2 := rbuf
-	hf2 := blake2.New(&blake2.Config{
-		Key:      conf.Psk,
-		Personal: []byte(domainStr),
-		Size:     32,
-		Salt:     []byte{2},
+	hf2, _ := blake2b.New(&blake2b.Config{
+		Key:    conf.Psk,
+		Person: []byte(domainStr),
+		Size:   32,
+		Salt:   []byte{2},
 	})
 	hf2.Write(h1)
 	wh2 := hf2.Sum(nil)
@@ -36,11 +37,11 @@ func getOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Writ
 	ciphertextWithNonce := storedContent.ciphertextWithNonce
 	storedContentRWMutex.RUnlock()
 
-	hf3 := blake2.New(&blake2.Config{
-		Key:      conf.Psk,
-		Personal: []byte(domainStr),
-		Size:     32,
-		Salt:     []byte{3},
+	hf3, _ := blake2b.New(&blake2b.Config{
+		Key:    conf.Psk,
+		Person: []byte(domainStr),
+		Size:   32,
+		Salt:   []byte{3},
 	})
 	hf3.Write(h2)
 	hf3.Write(storedContent.signature)
@@ -68,11 +69,11 @@ func storeOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Wr
 		return
 	}
 	signature := rbuf[40:104]
-	hf2 := blake2.New(&blake2.Config{
-		Key:      conf.Psk,
-		Personal: []byte(domainStr),
-		Size:     32,
-		Salt:     []byte{2},
+	hf2, _ := blake2b.New(&blake2b.Config{
+		Key:    conf.Psk,
+		Person: []byte(domainStr),
+		Size:   32,
+		Salt:   []byte{2},
 	})
 	hf2.Write(h1)
 	hf2.Write(signature)
@@ -87,11 +88,11 @@ func storeOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Wr
 	if ed25519.Verify(conf.SignPk, ciphertextWithNonce, signature) != true {
 		return
 	}
-	hf3 := blake2.New(&blake2.Config{
-		Key:      conf.Psk,
-		Personal: []byte(domainStr),
-		Size:     32,
-		Salt:     []byte{3},
+	hf3, _ := blake2b.New(&blake2b.Config{
+		Key:    conf.Psk,
+		Person: []byte(domainStr),
+		Size:   32,
+		Salt:   []byte{3},
 	})
 	hf3.Write(h2)
 	h3 := hf3.Sum(nil)
@@ -120,11 +121,11 @@ func handleClient(conf Conf, conn net.Conn) {
 	}
 	r := rbuf[1:33]
 	h0 := rbuf[33:65]
-	hf0 := blake2.New(&blake2.Config{
-		Key:      conf.Psk,
-		Personal: []byte(domainStr),
-		Size:     32,
-		Salt:     []byte{0},
+	hf0, _ := blake2b.New(&blake2b.Config{
+		Key:    conf.Psk,
+		Person: []byte(domainStr),
+		Size:   32,
+		Salt:   []byte{0},
 	})
 	hf0.Write([]byte{version})
 	hf0.Write(r)
@@ -132,11 +133,11 @@ func handleClient(conf Conf, conn net.Conn) {
 	if subtle.ConstantTimeCompare(wh0, h0) != 1 {
 		return
 	}
-	hf1 := blake2.New(&blake2.Config{
-		Key:      conf.Psk,
-		Personal: []byte(domainStr),
-		Size:     32,
-		Salt:     []byte{1},
+	hf1, _ := blake2b.New(&blake2b.Config{
+		Key:    conf.Psk,
+		Person: []byte(domainStr),
+		Size:   32,
+		Salt:   []byte{1},
 	})
 	hf1.Write([]byte{version})
 	hf1.Write(h0)

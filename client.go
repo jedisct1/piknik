@@ -12,7 +12,7 @@ import (
 	"net"
 	"os"
 
-	"github.com/codahale/blake2"
+	"github.com/minio/blake2b-simd"
 	"github.com/yawning/chacha20"
 	"golang.org/x/crypto/ed25519"
 )
@@ -35,11 +35,11 @@ func copyOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Wri
 	ciphertext := ciphertextWithNonce[24:]
 	cipher.XORKeyStream(ciphertext, content)
 	signature := ed25519.Sign(conf.SignSk, ciphertextWithNonce)
-	hf2 := blake2.New(&blake2.Config{
-		Key:      conf.Psk,
-		Personal: []byte(domainStr),
-		Size:     32,
-		Salt:     []byte{2},
+	hf2, _ := blake2b.New(&blake2b.Config{
+		Key:    conf.Psk,
+		Person: []byte(domainStr),
+		Size:   32,
+		Salt:   []byte{2},
 	})
 	hf2.Write(h1)
 	hf2.Write(signature)
@@ -59,11 +59,11 @@ func copyOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Wri
 		return
 	}
 	h3 := rbuf
-	hf3 := blake2.New(&blake2.Config{
-		Key:      conf.Psk,
-		Personal: []byte(domainStr),
-		Size:     32,
-		Salt:     []byte{3},
+	hf3, _ := blake2b.New(&blake2b.Config{
+		Key:    conf.Psk,
+		Person: []byte(domainStr),
+		Size:   32,
+		Salt:   []byte{3},
 	})
 	hf3.Write(h2)
 	wh3 := hf3.Sum(nil)
@@ -74,11 +74,11 @@ func copyOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Wri
 }
 
 func pasteOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Writer) {
-	hf2 := blake2.New(&blake2.Config{
-		Key:      conf.Psk,
-		Personal: []byte(domainStr),
-		Size:     32,
-		Salt:     []byte{2},
+	hf2, _ := blake2b.New(&blake2b.Config{
+		Key:    conf.Psk,
+		Person: []byte(domainStr),
+		Size:   32,
+		Salt:   []byte{2},
 	})
 	hf2.Write(h1)
 	h2 := hf2.Sum(nil)
@@ -94,11 +94,11 @@ func pasteOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Wr
 	h3 := rbuf[0:32]
 	ciphertextWithNonceLen := binary.LittleEndian.Uint64(rbuf[32:40])
 	signature := rbuf[40:104]
-	hf3 := blake2.New(&blake2.Config{
-		Key:      conf.Psk,
-		Personal: []byte(domainStr),
-		Size:     32,
-		Salt:     []byte{3},
+	hf3, _ := blake2b.New(&blake2b.Config{
+		Key:    conf.Psk,
+		Person: []byte(domainStr),
+		Size:   32,
+		Salt:   []byte{3},
 	})
 	hf3.Write(h2)
 	hf3.Write(signature)
@@ -134,11 +134,11 @@ func ClientMain(conf Conf, isCopy bool) {
 	if _, err = rand.Read(r); err != nil {
 		log.Fatal(err)
 	}
-	hf0 := blake2.New(&blake2.Config{
-		Key:      conf.Psk,
-		Personal: []byte(domainStr),
-		Size:     32,
-		Salt:     []byte{0},
+	hf0, _ := blake2b.New(&blake2b.Config{
+		Key:    conf.Psk,
+		Person: []byte(domainStr),
+		Size:   32,
+		Salt:   []byte{0},
 	})
 	version := byte(1)
 	hf0.Write([]byte{version})
@@ -160,11 +160,11 @@ func ClientMain(conf Conf, isCopy bool) {
 		return
 	}
 	h1 := rbuf[1:33]
-	hf1 := blake2.New(&blake2.Config{
-		Key:      conf.Psk,
-		Personal: []byte(domainStr),
-		Size:     32,
-		Salt:     []byte{1},
+	hf1, _ := blake2b.New(&blake2b.Config{
+		Key:    conf.Psk,
+		Person: []byte(domainStr),
+		Size:   32,
+		Salt:   []byte{1},
 	})
 	hf1.Write([]byte{version})
 	hf1.Write(h0)
