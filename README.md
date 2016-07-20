@@ -97,3 +97,59 @@ Retrieve the content of the clipboard and spit it to the standard output.
 That's it.
 
 Feed it anything. Text, binary data, whatever. As long as it fits in memory.
+
+## Wait...
+
+Wait. Where are the `pkc` and `pkp` commands describer earlier?
+
+Shell aliases:
+
+```bash
+alias pkc='piknik -copy'
+alias pkp='piknik -paste'
+```
+
+Use your own :)
+
+## Protocol
+
+Common:
+```
+ct: ChaCha20 ke,n (m)
+Hk,s: BLAKE2b(domain="SK", key=k, salt=s, size=32)
+len(x): x encoded as a 64-bit little endian unsigned integer
+n: random 192-bit nonce
+r: random 256-bit nonce
+sig: Ed25519
+v: 1
+```
+
+Copy:
+```
+-> v || r || H0
+H0 := Hk,0(v || r)
+
+<- v || H1
+H1 := Hk,1(v || H0)
+
+-> 'S' || H2 || len(n || ct) || s || n || ct
+s := sig(n || ct)
+H2 := Hk,2(H1 || s)
+
+<- Hk,3(H2)
+```
+
+Paste:
+```
+-> v || r || H0
+H0 := Hk,0(v || r)
+
+<- v || H1
+H1 := Hk,1(v || H0)
+
+-> 'G' || H2
+H2 := Hk,2(H1)
+
+<- Hk,3(H2 || sig) || len(n || ct) || s || n || ct
+s := sig(n || ct)
+```
