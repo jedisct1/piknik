@@ -446,25 +446,17 @@ func main() {
 		return
 	}
 	pskHex := tomlConf.Psk
-	pskRaw, err := hex.DecodeString(pskHex)
+	psk, err := hex.DecodeString(pskHex)
 	if err != nil {
 		log.Fatal(err)
 	}
-	hf32 := blake2.New(&blake2.Config{
-		Personal: []byte(domainStr),
-		Size:     32,
-	})
-	hf32.Write(pskRaw)
-	conf.Psk = hf32.Sum(nil)
-	hf32.Reset()
+	conf.Psk = psk
 	if encryptSkHex := tomlConf.EncryptSk; encryptSkHex != "" {
 		encryptSk, err := hex.DecodeString(encryptSkHex)
 		if err != nil {
 			log.Fatal(err)
 		}
-		hf32.Write(encryptSk)
-		conf.EncryptSk = hf32.Sum(nil)
-		hf32.Reset()
+		conf.EncryptSk = encryptSk
 	}
 	if signSkHex := tomlConf.SignSk; signSkHex != "" {
 		signSk, err := hex.DecodeString(signSkHex)
