@@ -115,7 +115,7 @@ Use your own :)
 
 Common:
 ```
-ct: ChaCha20 ke,n (m)
+ct: XChaCha20 ke,n (m)
 Hk,s: BLAKE2b(domain="SK", key=k, salt=s, size=32)
 len(x): x encoded as a 64-bit little endian unsigned integer
 n: random 192-bit nonce
