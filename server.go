@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"crypto/subtle"
 	"encoding/binary"
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -61,6 +62,11 @@ func storeOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Wr
 	}
 	h2 := rbuf[0:32]
 	ciphertextWithNonceLen := binary.LittleEndian.Uint64(rbuf[32:40])
+	if conf.MaxLen > 0 && ciphertextWithNonceLen > conf.MaxLen {
+		fmt.Printf("%v bytes requested to be stored, but limit set to %v bytes (%v Mb)\n",
+			ciphertextWithNonceLen, conf.MaxLen, conf.MaxLen/(1024*1024))
+		return
+	}
 	signature := rbuf[40:104]
 	hf2 := blake2.New(&blake2.Config{
 		Key:      conf.Psk,

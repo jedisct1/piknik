@@ -17,6 +17,7 @@ const domainStr = "PK"
 type tomlConfig struct {
 	Connect   string
 	Listen    string
+	MaxLen    uint64
 	EncryptSk string
 	Psk       string
 	SignPk    string
@@ -27,6 +28,7 @@ type tomlConfig struct {
 type Conf struct {
 	Connect   string
 	Listen    string
+	MaxLen    uint64
 	EncryptSk []byte
 	Psk       []byte
 	SignPk    []byte
@@ -55,6 +57,7 @@ func main() {
 	_ = flag.Bool("paste", false, "retrieve content (paste) - ignored")
 	isServer := flag.Bool("server", false, "start a server")
 	isGenKeys := flag.Bool("genkeys", false, "generate keys")
+	maxLenMb := flag.Uint64("maxlen", 0, "maximum content length to accept in Mb (0=unlimited)")
 	defaultConfigFile := "~/.piknik.toml"
 	if runtime.GOOS == "windows" {
 		defaultConfigFile = "~/piknik.toml"
@@ -111,6 +114,7 @@ func main() {
 		}
 		conf.SignPk = signPk
 	}
+	conf.MaxLen = *maxLenMb * 1024 * 1024
 	if *isServer {
 		ServerMain(conf)
 	} else {
