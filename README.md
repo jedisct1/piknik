@@ -126,39 +126,39 @@ Common:
 ```
 ct: XChaCha20 ke,n (m)
 Hk,s: BLAKE2b(domain="SK", key=k, salt=s, size=32)
-len(x): x encoded as a 64-bit little endian unsigned integer
+Len(x): x encoded as a 64-bit little endian unsigned integer
 n: random 192-bit nonce
 r: random 256-bit nonce
-sig: Ed25519
+Sig: Ed25519
 v: 1
 ```
 
 Copy:
 ```
--> v || r || H0
-H0 := Hk,0(v || r)
+-> v || r || h0
+h0 := Hk,0(v || r)
 
-<- v || H1
-H1 := Hk,1(v || H0)
+<- v || h1
+Hh := Hk,1(v || h0)
 
--> 'S' || H2 || len(n || ct) || s || n || ct
-s := sig(n || ct)
-H2 := Hk,2(H1 || s)
+-> 'S' || h2 || Len(n || ct) || s || n || ct
+s := Sig(n || ct)
+h2 := Hk,2(h1 || s)
 
-<- Hk,3(H2)
+<- Hk,3(h2)
 ```
 
 Paste:
 ```
--> v || r || H0
-H0 := Hk,0(v || r)
+-> v || r || h0
+h0 := Hk,0(v || r)
 
-<- v || H1
-H1 := Hk,1(v || H0)
+<- v || h1
+h1 := Hk,1(v || H0)
 
--> 'G' || H2
-H2 := Hk,2(H1)
+-> 'G' || h2
+h2 := Hk,2(h1)
 
-<- Hk,3(H2 || sig) || len(n || ct) || s || n || ct
-s := sig(n || ct)
+<- Hk,3(h2 || s) || Len(n || ct) || s || n || ct
+s := Sig(n || ct)
 ```
