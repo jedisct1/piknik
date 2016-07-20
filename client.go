@@ -52,10 +52,12 @@ func copyOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Wri
 	writer.Write(signature)
 	writer.Write(ciphertextWithNonce)
 	if err := writer.Flush(); err != nil {
-		log.Fatal(err)
+		log.Print(err)
+		return
 	}
 	rbuf := make([]byte, 32)
 	if _, err = io.ReadFull(reader, rbuf); err != nil {
+		log.Print(err)
 		return
 	}
 	h3 := rbuf
@@ -85,10 +87,12 @@ func pasteOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Wr
 	writer.WriteByte(byte('G'))
 	writer.Write(h2)
 	if err := writer.Flush(); err != nil {
-		log.Fatal(err)
+		log.Print(err)
+		return
 	}
 	rbuf := make([]byte, 104)
 	if _, err := io.ReadFull(reader, rbuf); err != nil {
+		log.Print(err)
 		return
 	}
 	h3 := rbuf[0:32]
@@ -108,6 +112,7 @@ func pasteOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Wr
 	}
 	ciphertextWithNonce := make([]byte, ciphertextWithNonceLen)
 	if _, err := io.ReadFull(reader, ciphertextWithNonce); err != nil {
+		log.Print(err)
 		return
 	}
 	if ed25519.Verify(conf.SignPk, ciphertextWithNonce, signature) != true {
@@ -149,11 +154,13 @@ func ClientMain(conf Conf, isCopy bool) {
 	writer.Write(r)
 	writer.Write(h0)
 	if err := writer.Flush(); err != nil {
-		log.Fatal(err)
+		log.Print(err)
+		return
 	}
 	reader := bufio.NewReader(conn)
 	rbuf := make([]byte, 33)
 	if _, err = io.ReadFull(reader, rbuf); err != nil {
+		log.Print(err)
 		return
 	}
 	if rbuf[0] != version {

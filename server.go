@@ -17,6 +17,7 @@ import (
 func getOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Writer) {
 	rbuf := make([]byte, 32)
 	if _, err := io.ReadFull(reader, rbuf); err != nil {
+		log.Print(err)
 		return
 	}
 	h2 := rbuf
@@ -52,13 +53,15 @@ func getOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Writ
 	writer.Write(signature)
 	writer.Write(ciphertextWithNonce)
 	if err := writer.Flush(); err != nil {
-		log.Fatal(err)
+		log.Print(err)
+		return
 	}
 }
 
 func storeOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Writer) {
 	rbuf := make([]byte, 104)
 	if _, err := io.ReadFull(reader, rbuf); err != nil {
+		log.Print(err)
 		return
 	}
 	h2 := rbuf[0:32]
@@ -83,6 +86,7 @@ func storeOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Wr
 	}
 	ciphertextWithNonce := make([]byte, ciphertextWithNonceLen)
 	if _, err := io.ReadFull(reader, ciphertextWithNonce); err != nil {
+		log.Print(err)
 		return
 	}
 	if ed25519.Verify(conf.SignPk, ciphertextWithNonce, signature) != true {
@@ -104,6 +108,7 @@ func storeOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Wr
 
 	writer.Write(h3)
 	if err := writer.Flush(); err != nil {
+		log.Print(err)
 		return
 	}
 }
@@ -113,6 +118,7 @@ func handleClient(conf Conf, conn net.Conn) {
 	reader := bufio.NewReader(conn)
 	rbuf := make([]byte, 65)
 	if _, err := io.ReadFull(reader, rbuf); err != nil {
+		log.Print(err)
 		return
 	}
 	version := rbuf[0]
@@ -146,6 +152,7 @@ func handleClient(conf Conf, conn net.Conn) {
 	writer.Write([]byte{version})
 	writer.Write(h1)
 	if err := writer.Flush(); err != nil {
+		log.Print(err)
 		return
 	}
 	operation, err := reader.ReadByte()
