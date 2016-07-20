@@ -12,6 +12,48 @@ import (
 	"golang.org/x/crypto/ed25519"
 )
 
+func getOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Writer) {
+	rbuf := make([]byte, 32)
+	if _, err := io.ReadFull(reader, rbuf); err != nil {
+		return
+	}
+	h2 := rbuf
+	hf2 := blake2.New(&blake2.Config{
+		Key:      conf.Psk,
+		Personal: []byte(domainStr),
+		Size:     32,
+		Salt:     []byte{2},
+	})
+	hf2.Write(h1)
+	wh2 := hf2.Sum(nil)
+	if subtle.ConstantTimeCompare(wh2, h2) != 1 {
+		return
+	}
+
+	storedContentRWMutex.RLock()
+	signature := storedContent.signature
+	ciphertextWithNonce := storedContent.ciphertextWithNonce
+	storedContentRWMutex.RUnlock()
+
+	hf3 := blake2.New(&blake2.Config{
+		Key:      conf.Psk,
+		Personal: []byte(domainStr),
+		Size:     32,
+		Salt:     []byte{3},
+	})
+	hf3.Write(h2)
+	hf3.Write(storedContent.signature)
+	h3 := hf3.Sum(nil)
+	writer.Write(h3)
+	ciphertextWithNonceLen := uint64(len(ciphertextWithNonce))
+	binary.Write(writer, binary.LittleEndian, ciphertextWithNonceLen)
+	writer.Write(signature)
+	writer.Write(ciphertextWithNonce)
+	if err := writer.Flush(); err != nil {
+		log.Fatal(err)
+	}
+}
+
 func storeOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Writer) {
 	rbuf := make([]byte, 104)
 	if _, err := io.ReadFull(reader, rbuf); err != nil {
@@ -59,48 +101,6 @@ func storeOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Wr
 	}
 }
 
-func getOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Writer) {
-	rbuf := make([]byte, 32)
-	if _, err := io.ReadFull(reader, rbuf); err != nil {
-		return
-	}
-	h2 := rbuf
-	hf2 := blake2.New(&blake2.Config{
-		Key:      conf.Psk,
-		Personal: []byte(domainStr),
-		Size:     32,
-		Salt:     []byte{2},
-	})
-	hf2.Write(h1)
-	wh2 := hf2.Sum(nil)
-	if subtle.ConstantTimeCompare(wh2, h2) != 1 {
-		return
-	}
-
-	storedContentRWMutex.RLock()
-	signature := storedContent.signature
-	ciphertextWithNonce := storedContent.ciphertextWithNonce
-	storedContentRWMutex.RUnlock()
-
-	hf3 := blake2.New(&blake2.Config{
-		Key:      conf.Psk,
-		Personal: []byte(domainStr),
-		Size:     32,
-		Salt:     []byte{3},
-	})
-	hf3.Write(h2)
-	hf3.Write(storedContent.signature)
-	h3 := hf3.Sum(nil)
-	writer.Write(h3)
-	ciphertextWithNonceLen := uint64(len(ciphertextWithNonce))
-	binary.Write(writer, binary.LittleEndian, ciphertextWithNonceLen)
-	writer.Write(signature)
-	writer.Write(ciphertextWithNonce)
-	if err := writer.Flush(); err != nil {
-		log.Fatal(err)
-	}
-}
-
 func handleClient(conf Conf, conn net.Conn) {
 	defer conn.Close()
 	reader := bufio.NewReader(conn)
@@ -145,10 +145,11 @@ func handleClient(conf Conf, conn net.Conn) {
 	if err != nil {
 		return
 	}
-	if operation == byte('S') {
-		storeOperation(conf, h1, reader, writer)
-	} else if operation == byte('G') {
+	switch operation {
+	case byte('G'):
 		getOperation(conf, h1, reader, writer)
+	case byte('S'):
+		storeOperation(conf, h1, reader, writer)
 	}
 }
 
