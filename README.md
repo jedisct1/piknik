@@ -79,7 +79,7 @@ Run the following command on the staging server (or use `runit`, whatever):
 $ piknik -server
 ```
 
-## Usage (server)
+## Usage (client)
 
 ```bash
 $ piknik -copy
