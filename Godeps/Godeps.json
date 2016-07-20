@@ -1,0 +1,27 @@
+{
+	"ImportPath": "github.com/jedisct1/piknik",
+	"GoVersion": "go1.6.3",
+	"Deps": [
+		{
+			"ImportPath": "github.com/BurntSushi/toml",
+			"Comment": "v0.1.0-23-g5c4df71",
+			"Rev": "5c4df71dfe9ac89ef6287afc05e4c1b16ae65a1e"
+		},
+		{
+			"ImportPath": "github.com/codahale/blake2",
+			"Rev": "8d10d0420cbfbdc9c1164c0c4ad3457a6c3771b9"
+		},
+		{
+			"ImportPath": "github.com/mitchellh/go-homedir",
+			"Rev": "d682a8f0cf139663a984ff12528da460ca963de9"
+		},
+		{
+			"ImportPath": "github.com/yawning/chacha20",
+			"Rev": "c91e78db502ff629614837aacb7aa4efa61c651a"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/ed25519",
+			"Rev": "911fafb28f4ee7c7bd483539a6c96190bbbccc3f"
+		}
+	]
+}
