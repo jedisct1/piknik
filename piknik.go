@@ -15,22 +15,22 @@ import (
 const domainStr = "PK"
 
 type tomlConfig struct {
-	Listen    string
 	Connect   string
-	Psk       string
+	Listen    string
 	EncryptSk string
-	SignSk    string
+	Psk       string
 	SignPk    string
+	SignSk    string
 }
 
 // Conf - Shared config
 type Conf struct {
-	Listen    string
 	Connect   string
-	Psk       []byte
+	Listen    string
 	EncryptSk []byte
-	SignSk    []byte
+	Psk       []byte
 	SignPk    []byte
+	SignSk    []byte
 }
 
 // StoredContent - Paste buffer
