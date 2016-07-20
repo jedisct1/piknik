@@ -14,7 +14,7 @@ $ pkc
 clipboard content
 ```
 
-Magically retrieve that content from any other host having Piknik installed:
+Magically retrieve that content from any other host having Piknik installed with the same configuration:
 
 ```bash
 $ pkp
