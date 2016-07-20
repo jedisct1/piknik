@@ -418,12 +418,13 @@ func expandConfigFile(path string) string {
 }
 
 func main() {
-	isPut := flag.Bool("put", false, "store content (copy) - default is get (paste)")
+	isPut := flag.Bool("copy", false, "store content (copy) - default is to retrieve the clipboard content (paste)")
+	_ = flag.Bool("paste", false, "retrieve content (paste) - ignored")
 	isServer := flag.Bool("server", false, "start a server")
 	isGenKeys := flag.Bool("genkeys", false, "generate keys")
-	defaultConfigFile := "~/.pk.toml"
+	defaultConfigFile := "~/.piknik.toml"
 	if runtime.GOOS == "windows" {
-		defaultConfigFile = "~/pk.toml"
+		defaultConfigFile = "~/piknik.toml"
 	}
 	configFile := flag.String("config", defaultConfigFile, "configuration file")
 	flag.Parse()
