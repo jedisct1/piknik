@@ -2,7 +2,7 @@
 Copy/paste anything over the network
 
 ## Blurb
-Ever needed a copy/paste clipboard that works on over the network?
+Ever needed a copy/paste clipboard that works over the network?
 
 Piknik seamlessly transfers URLs, code snipppets, documents, virtually anything, between (possibly firewalled) hosts.
 No SSH needed.
