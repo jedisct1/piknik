@@ -7,7 +7,7 @@ Ever needed a copy/paste clipboard that works over the network?
 Piknik seamlessly transfers URLs, code snipppets, documents, virtually anything, between (possibly firewalled) hosts.
 No SSH needed.
 
-Fill in the clipboard ("copy") on host A with whaver comes in on the standard input:
+Fill in the clipboard ("copy") on host `A` with whatever comes in on the standard input:
 
 ```bash
 $ echo clipboard content | pkc
