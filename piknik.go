@@ -53,7 +53,7 @@ type StoredContent struct {
 var storedContent StoredContent
 var storedContentRWMutex sync.RWMutex
 
-func client(conf Conf, isPut bool) {
+func client(conf Conf, isCopy bool) {
 	conn, err := net.Dial("tcp", conf.Connect)
 	if err != nil {
 		log.Panic(err)
@@ -101,7 +101,7 @@ func client(conf Conf, isPut bool) {
 		return
 	}
 
-	if isPut {
+	if isCopy {
 		content, err := ioutil.ReadAll(os.Stdin)
 		if err != nil {
 			log.Fatal(err)
@@ -158,7 +158,7 @@ func client(conf Conf, isPut bool) {
 			return
 		}
 		fmt.Println("Sent and ACK'd by the server")
-	} else { // !isPut
+	} else { // !isCopy
 		hf2 := blake2.New(&blake2.Config{
 			Key:      conf.Psk,
 			Personal: []byte(domainStr),
@@ -412,7 +412,7 @@ func expandConfigFile(path string) string {
 }
 
 func main() {
-	isPut := flag.Bool("copy", false, "store content (copy) - default is to retrieve the clipboard content (paste)")
+	isCopy := flag.Bool("copy", false, "store content (copy) - default is to retrieve the clipboard content (paste)")
 	_ = flag.Bool("paste", false, "retrieve content (paste) - ignored")
 	isServer := flag.Bool("server", false, "start a server")
 	isGenKeys := flag.Bool("genkeys", false, "generate keys")
@@ -475,6 +475,6 @@ func main() {
 	if *isServer {
 		server(conf)
 	} else {
-		client(conf, *isPut)
+		client(conf, *isCopy)
 	}
 }
