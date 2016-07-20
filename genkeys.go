@@ -36,12 +36,16 @@ func genKeys(conf Conf, configFile string) {
 	fmt.Printf("Psk = %q\n", pskHex)
 	fmt.Printf("SignPk = %q\n", signPkHex)
 	fmt.Printf("SignSk = %q\n", signSkHex)
+
 	fmt.Printf("\n\n")
+
 	fmt.Printf("# Configuration for a server\n\n")
 	fmt.Printf("Listen = %q\t# Edit appropriately\n", conf.Listen)
 	fmt.Printf("Psk = %q\n", pskHex)
 	fmt.Printf("SignPk = %q\n", signPkHex)
+
 	fmt.Printf("\n\n")
+
 	fmt.Printf("# Hybrid configuration\n\n")
 	fmt.Printf("Connect = %q\t# Edit appropriately\n", conf.Connect)
 	fmt.Printf("EncryptSk = %q\n", encryptSkHex)
