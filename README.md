@@ -24,7 +24,7 @@ Boom.
 
 In order to bypass firewalls/NAT gatways and to provide persistence, the clipboard content transits via a staging server.
 
-Oh, and nothing transits without encryption and authentication. And data can be shared between different operating systems. Even Windows is kinda supported.
+Oh, and nothing transits without end-to-end encryption and authentication. And data can be shared between different operating systems. Even Windows is kinda supported.
 
 ## Installation
 
