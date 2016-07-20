@@ -44,12 +44,6 @@ type Conf struct {
 	SignPk    []byte
 }
 
-// KeyPair - A key pair
-type KeyPair struct {
-	Sk [32]byte
-	Pk [32]byte
-}
-
 // StoredContent - Paste buffer
 type StoredContent struct {
 	signature           []byte
