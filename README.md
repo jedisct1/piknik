@@ -30,6 +30,11 @@ $ pkc < kitten.gif
 $ pkp > kittencopy.gif
 ```
 
+```bash
+$ tar cvf - *txt | pkc
+$ pkp | tar xvf -
+```
+
 In order to bypass firewalls/NAT gatways and to provide persistence, the clipboard content transits via a staging server.
 
 Nothing transits without end-to-end encryption and authentication; the server doesn't learn much about what the clipboard actually contains.
