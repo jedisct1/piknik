@@ -5,7 +5,7 @@ Copy/paste anything over the network
 Ever needed a copy/paste clipboard that works over the network?
 
 Piknik seamlessly transfers URLs, code snipppets, documents, virtually anything between (possibly firewalled) hosts.
-No SSH needed.
+No SSH needed, and hosts can be behind NAT gateways, on different networks.
 
 Fill in the clipboard ("copy") with whatever comes in to the standard input:
 
@@ -35,7 +35,7 @@ $ tar cvf - *.txt | pkc
 $ pkp | tar xvf -
 ```
 
-In order to bypass firewalls/NAT gatways and to provide persistence, the clipboard content transits via a staging server.
+In order to work around firewalls/NAT gatways, the clipboard content transits via a staging server.
 
 Nothing transits without end-to-end encryption and authentication; the server doesn't learn much about what the clipboard actually contains.
 
