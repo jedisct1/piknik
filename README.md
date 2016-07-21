@@ -137,7 +137,7 @@ Common:
 ```
 k: pre-shared key
 ek: 256-bit symmetric encryption key
-ekid: encryption key id encoded as a 64-bit little endian unsigned integer
+ekid: encryption key id encoded as a 64-bit little endian integer
 m: plaintext
 ct: XChaCha20 ek,n (m)
 Hk,s: BLAKE2b(domain="SK", key=k, salt=s, size=32)
