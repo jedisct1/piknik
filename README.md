@@ -46,8 +46,8 @@ Data can be shared between different operating systems. Even Windows is kinda su
 
 ### Option 1: use precompiled binaries
 
-Statically compiled binaries for OSX, Linux and OpenBSD can be
-downloaded here: https://download.pureftpd.org/piknik
+Precompiled binaries for OSX, Linux and OpenBSD can be downloaded here:
+https://download.pureftpd.org/piknik
 
 ### Option 2: compile the source code
 
