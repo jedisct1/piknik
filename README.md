@@ -118,7 +118,7 @@ Feed it anything. Text, binary data, whatever. As long as it fits in memory.
 
 ## Wait...
 
-Wait. Where are the `pkc` and `pkp` commands describer earlier?
+Wait. Where are the `pkc` and `pkp` commands mentioned earlier?
 
 Sample shell aliases:
 
