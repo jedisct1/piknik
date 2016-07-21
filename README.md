@@ -151,7 +151,7 @@ Use your own :)
 
 ## Protocol
 
-Common definition:
+Common definitions:
 ```
 k: pre-shared key
 ek: 256-bit symmetric encryption key
