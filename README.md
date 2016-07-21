@@ -58,7 +58,7 @@ $ export GOPATH=${GOPATH:-~/go} ; mkdir -p $GOPATH
 $ go get github.com/jedisct1/piknik
 ```
 
-The `piknik` should then be available in `$GOPATH/bin`.
+The `piknik` executable file should then be available in `$GOPATH/bin`.
 
 ## Setup
 
@@ -155,7 +155,7 @@ Use your own :)
 
 ## Protocol
 
-Common definition:
+Common definitions:
 ```
 k: pre-shared key
 ek: 256-bit symmetric encryption key
