@@ -105,7 +105,11 @@ Run the following command on the staging server (or use `runit`, whatever):
 $ piknik -server
 ```
 
-## Usage (client)
+The staging server has to be publicly accessible. At the very least, it must be reachable by the clients.
+
+Commands without a valid API key (present in the client configuration file) will be rejected by the server.
+
+## Usage (clients)
 
 ```bash
 $ piknik -copy
