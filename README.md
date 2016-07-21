@@ -131,10 +131,20 @@ Wait. Where are the `pkc` and `pkp` commands mentioned earlier?
 Sample shell aliases:
 
 ```bash
+# pko <content> : copy <content> to the clipboard
 pko() { echo "$*" | piknik -copy }
+
+# pkf <file> : copy the content of <file> to the clipboard
 pkf() { piknik -copy < $1 }
+
+# pkc : read the content to copy to the clipboard from STDIN
 alias pkc='piknik -copy'
+
+# pkp : paste the clipboard content
 alias pkp='piknik -paste'
+
+# pkz : delete the clipboard content
+alias pkz='piknik -copy < /dev/null'
 ```
 
 Use your own :)
