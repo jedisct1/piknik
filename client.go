@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/binary"
@@ -42,6 +43,7 @@ func copyOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Wri
 		Salt:   []byte{2},
 	})
 	hf2.Write(h1)
+	hf2.Write(conf.EncryptSkID)
 	hf2.Write(signature)
 	h2 := hf2.Sum(nil)
 
@@ -49,6 +51,7 @@ func copyOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Wri
 	writer.Write(h2)
 	ciphertextWithNonceLen := uint64(len(ciphertextWithNonce))
 	binary.Write(writer, binary.LittleEndian, ciphertextWithNonceLen)
+	writer.Write(conf.EncryptSkID)
 	writer.Write(signature)
 	writer.Write(ciphertextWithNonce)
 	if err := writer.Flush(); err != nil {
@@ -90,14 +93,16 @@ func pasteOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Wr
 		log.Print(err)
 		return
 	}
-	rbuf := make([]byte, 104)
+	rbuf := make([]byte, 112)
 	if _, err := io.ReadFull(reader, rbuf); err != nil {
 		log.Print(err)
 		return
 	}
 	h3 := rbuf[0:32]
 	ciphertextWithNonceLen := binary.LittleEndian.Uint64(rbuf[32:40])
-	signature := rbuf[40:104]
+	encryptSkID := rbuf[40:48]
+	_ = encryptSkID
+	signature := rbuf[48:112]
 	hf3, _ := blake2b.New(&blake2b.Config{
 		Key:    conf.Psk,
 		Person: []byte(domainStr),
@@ -105,10 +110,17 @@ func pasteOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Wr
 		Salt:   []byte{3},
 	})
 	hf3.Write(h2)
+	hf3.Write(encryptSkID)
 	hf3.Write(signature)
 	wh3 := hf3.Sum(nil)
 	if subtle.ConstantTimeCompare(wh3, h3) != 1 {
 		return
+	}
+	if bytes.Equal(conf.EncryptSkID, encryptSkID) == false {
+		wEncryptSkIDStr := binary.LittleEndian.Uint64(conf.EncryptSkID)
+		encryptSkIDStr := binary.LittleEndian.Uint64(encryptSkID)
+		log.Fatal(fmt.Sprintf("Configured key ID is %v but content was encrypted using key ID %v",
+			wEncryptSkIDStr, encryptSkIDStr))
 	}
 	ciphertextWithNonce := make([]byte, ciphertextWithNonceLen)
 	if _, err := io.ReadFull(reader, ciphertextWithNonce); err != nil {
@@ -145,7 +157,7 @@ func ClientMain(conf Conf, isCopy bool) {
 		Size:   32,
 		Salt:   []byte{0},
 	})
-	version := byte(1)
+	version := byte(2)
 	hf0.Write([]byte{version})
 	hf0.Write(r)
 	h0 := hf0.Sum(nil)

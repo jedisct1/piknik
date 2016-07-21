@@ -8,11 +8,22 @@ import (
 	"io"
 	"log"
 	"net"
+	"sync"
 
 	"github.com/minio/blake2b-simd"
 
 	"golang.org/x/crypto/ed25519"
 )
+
+// StoredContent - Paste buffer
+type StoredContent struct {
+	encryptSkID         []byte
+	signature           []byte
+	ciphertextWithNonce []byte
+}
+
+var storedContent StoredContent
+var storedContentRWMutex sync.RWMutex
 
 func getOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Writer) {
 	rbuf := make([]byte, 32)
@@ -34,6 +45,7 @@ func getOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Writ
 	}
 
 	storedContentRWMutex.RLock()
+	encryptSkID := storedContent.encryptSkID
 	signature := storedContent.signature
 	ciphertextWithNonce := storedContent.ciphertextWithNonce
 	storedContentRWMutex.RUnlock()
@@ -45,11 +57,13 @@ func getOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Writ
 		Salt:   []byte{3},
 	})
 	hf3.Write(h2)
+	hf3.Write(storedContent.encryptSkID)
 	hf3.Write(storedContent.signature)
 	h3 := hf3.Sum(nil)
 	writer.Write(h3)
 	ciphertextWithNonceLen := uint64(len(ciphertextWithNonce))
 	binary.Write(writer, binary.LittleEndian, ciphertextWithNonceLen)
+	writer.Write(encryptSkID)
 	writer.Write(signature)
 	writer.Write(ciphertextWithNonce)
 	if err := writer.Flush(); err != nil {
@@ -59,7 +73,7 @@ func getOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Writ
 }
 
 func storeOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Writer) {
-	rbuf := make([]byte, 104)
+	rbuf := make([]byte, 112)
 	if _, err := io.ReadFull(reader, rbuf); err != nil {
 		log.Print(err)
 		return
@@ -71,7 +85,8 @@ func storeOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Wr
 			ciphertextWithNonceLen, conf.MaxLen, conf.MaxLen/(1024*1024))
 		return
 	}
-	signature := rbuf[40:104]
+	encryptedSkID := rbuf[40:48]
+	signature := rbuf[48:112]
 	hf2, _ := blake2b.New(&blake2b.Config{
 		Key:    conf.Psk,
 		Person: []byte(domainStr),
@@ -79,6 +94,7 @@ func storeOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Wr
 		Salt:   []byte{2},
 	})
 	hf2.Write(h1)
+	hf2.Write(encryptedSkID)
 	hf2.Write(signature)
 	wh2 := hf2.Sum(nil)
 	if subtle.ConstantTimeCompare(wh2, h2) != 1 {
@@ -102,6 +118,7 @@ func storeOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Wr
 	h3 := hf3.Sum(nil)
 
 	storedContentRWMutex.Lock()
+	storedContent.encryptSkID = encryptedSkID
 	storedContent.signature = signature
 	storedContent.ciphertextWithNonce = ciphertextWithNonce
 	storedContentRWMutex.Unlock()
@@ -122,7 +139,8 @@ func handleClient(conf Conf, conn net.Conn) {
 		return
 	}
 	version := rbuf[0]
-	if version != 1 {
+	if version != 2 {
+		log.Print("Unsupported version - Please run the same version on the server and on the client")
 		return
 	}
 	r := rbuf[1:33]

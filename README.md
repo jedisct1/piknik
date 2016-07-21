@@ -135,13 +135,17 @@ Use your own :)
 
 Common:
 ```
-ct: XChaCha20 ke,n (m)
+k: pre-shared key
+ek: 256-bit symmetric encryption key
+ekid: encryption key id encoded as a 64-bit little endian unsigned integer
+m: plaintext
+ct: XChaCha20 ek,n (m)
 Hk,s: BLAKE2b(domain="SK", key=k, salt=s, size=32)
 Len(x): x encoded as a 64-bit little endian unsigned integer
 n: random 192-bit nonce
 r: random 256-bit nonce
 Sig: Ed25519
-v: 1
+v: 2
 ```
 
 Copy:
@@ -152,9 +156,9 @@ h0 := Hk,0(v || r)
 <- v || h1
 Hh := Hk,1(v || h0)
 
--> 'S' || h2 || Len(n || ct) || s || n || ct
+-> 'S' || h2 || Len(n || ct) || ekid || s || n || ct
 s := Sig(n || ct)
-h2 := Hk,2(h1 || s)
+h2 := Hk,2(h1 || ekid || s)
 
 <- Hk,3(h2)
 ```
@@ -170,6 +174,6 @@ h1 := Hk,1(v || H0)
 -> 'G' || h2
 h2 := Hk,2(h1)
 
-<- Hk,3(h2 || s) || Len(n || ct) || s || n || ct
+<- Hk,3(h2 || ekid || s) || Len(n || ct) || ekid || s || n || ct
 s := Sig(n || ct)
 ```

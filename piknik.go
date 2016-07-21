@@ -1,48 +1,42 @@
 package main
 
 import (
+	"encoding/binary"
 	"encoding/hex"
 	"flag"
 	"io/ioutil"
 	"log"
 	"runtime"
-	"sync"
 
 	"github.com/BurntSushi/toml"
+	blake2b "github.com/minio/blake2b-simd"
 	"github.com/mitchellh/go-homedir"
 )
 
 const domainStr = "PK"
 
 type tomlConfig struct {
-	Connect   string
-	Listen    string
-	MaxLen    uint64
-	EncryptSk string
-	Psk       string
-	SignPk    string
-	SignSk    string
+	Connect     string
+	Listen      string
+	MaxLen      uint64
+	EncryptSk   string
+	EncryptSkID uint64
+	Psk         string
+	SignPk      string
+	SignSk      string
 }
 
 // Conf - Shared config
 type Conf struct {
-	Connect   string
-	Listen    string
-	MaxLen    uint64
-	EncryptSk []byte
-	Psk       []byte
-	SignPk    []byte
-	SignSk    []byte
+	Connect     string
+	Listen      string
+	MaxLen      uint64
+	EncryptSk   []byte
+	EncryptSkID []byte
+	Psk         []byte
+	SignPk      []byte
+	SignSk      []byte
 }
-
-// StoredContent - Paste buffer
-type StoredContent struct {
-	signature           []byte
-	ciphertextWithNonce []byte
-}
-
-var storedContent StoredContent
-var storedContentRWMutex sync.RWMutex
 
 func expandConfigFile(path string) string {
 	file, err := homedir.Expand(path)
@@ -106,6 +100,19 @@ func main() {
 			log.Fatal(err)
 		}
 		conf.SignPk = signPk
+	}
+	if encryptSkID := tomlConf.EncryptSkID; encryptSkID > 0 {
+		conf.EncryptSkID = make([]byte, 8)
+		binary.LittleEndian.PutUint64(conf.EncryptSkID, encryptSkID)
+	} else if len(conf.EncryptSk) > 0 {
+		hf, _ := blake2b.New(&blake2b.Config{
+			Person: []byte(domainStr),
+			Size:   8,
+		})
+		hf.Write(conf.EncryptSk)
+		encryptSkID := hf.Sum(nil)
+		encryptSkID[7] &= 0x7f
+		conf.EncryptSkID = encryptSkID
 	}
 	if signSkHex := tomlConf.SignSk; signSkHex != "" {
 		signSk, err := hex.DecodeString(signSkHex)
