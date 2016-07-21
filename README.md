@@ -37,7 +37,7 @@ $ pkp | tar xvf -
 
 In order to work around firewalls/NAT gatways, the clipboard content transits via a staging server.
 
-Nothing transits without end-to-end encryption and authentication; the server doesn't learn much about what the clipboard actually contains.
+Nothing transits without end-to-end encryption; the server doesn't learn much about what the clipboard actually contains.
 
 Data can be shared between different operating systems. Even Windows is kinda supported.
 
