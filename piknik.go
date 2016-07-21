@@ -100,19 +100,29 @@ func main() {
 		}
 		conf.EncryptSk = encryptSk
 	}
-	if signSkHex := tomlConf.SignSk; signSkHex != "" {
-		signSk, err := hex.DecodeString(signSkHex)
-		if err != nil {
-			log.Fatal(err)
-		}
-		conf.SignSk = signSk
-	}
 	if signPkHex := tomlConf.SignPk; signPkHex != "" {
 		signPk, err := hex.DecodeString(signPkHex)
 		if err != nil {
 			log.Fatal(err)
 		}
 		conf.SignPk = signPk
+	}
+	if signSkHex := tomlConf.SignSk; signSkHex != "" {
+		signSk, err := hex.DecodeString(signSkHex)
+		if err != nil {
+			log.Fatal(err)
+		}
+		switch len(signSk) {
+		case 32:
+			if len(conf.SignPk) != 32 {
+				log.Fatal("Public signing key required")
+			}
+			signSk = append(signSk, conf.SignPk...)
+		case 64:
+		default:
+			log.Fatal("Unsupported length for the secret signing key")
+		}
+		conf.SignSk = signSk
 	}
 	conf.MaxLen = *maxLenMb * 1024 * 1024
 	if *isServer {

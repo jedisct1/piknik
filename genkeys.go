@@ -27,7 +27,7 @@ func genKeys(conf Conf, configFile string) {
 		log.Fatal(err)
 	}
 	signPkHex := hex.EncodeToString(signPk)
-	signSkHex := hex.EncodeToString(signSk)
+	signSkHex := hex.EncodeToString(signSk[0:32])
 
 	fmt.Printf("\n\n--- Create a file named %s with only the lines relevant to your configuration ---\n\n\n", configFile)
 	fmt.Printf("# Configuration for a client\n\n")
