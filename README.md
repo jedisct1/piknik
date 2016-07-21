@@ -58,7 +58,7 @@ $ export GOPATH=${GOPATH:-~/go} ; mkdir -p $GOPATH
 $ go get github.com/jedisct1/piknik
 ```
 
-The `piknik` should then be available in `$GOPATH/bin`.
+The `piknik` executable file should then be available in `$GOPATH/bin`.
 
 ## Setup
 
