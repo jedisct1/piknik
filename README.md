@@ -124,7 +124,7 @@ That's it.
 
 Feed it anything. Text, binary data, whatever. As long as it fits in memory.
 
-## Wait...
+## Suggested shell aliases
 
 Wait. Where are the `pkc` and `pkp` commands mentioned earlier?
 
