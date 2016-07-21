@@ -99,7 +99,7 @@ Don't like the default config file location? Use the `-config` switch.
 
 ## Usage (staging server)
 
-Run the following command on the staging server (or use `runit`, whatever):
+Run the following command on the staging server (or use `runit`, `openrc`, `systemd`, whatever to have it run as a background service):
 
 ```bash
 $ piknik -server
