@@ -157,7 +157,7 @@ Use your own :)
 
 Common definitions:
 ```
-k: pre-shared key
+k: API key
 ek: 256-bit symmetric encryption key
 ekid: encryption key id encoded as a 64-bit little endian integer
 m: plaintext
