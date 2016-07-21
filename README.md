@@ -31,7 +31,7 @@ $ pkp > kittencopy.gif
 ```
 
 ```bash
-$ tar cvf - *txt | pkc
+$ tar cvf - *.txt | pkc
 $ pkp | tar xvf -
 ```
 
