@@ -122,7 +122,7 @@ $ piknik -paste
 ```
 
 Retrieve the content of the clipboard and spit it to the standard output.
-`-paste` is actually a no-op. This is the default action if `-copy` is not being used.
+`-paste` is actually a no-op. This is the default action if `-copy` was not specified.
 
 That's it.
 
