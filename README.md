@@ -44,6 +44,13 @@ Data can be shared between different operating systems. Even Windows is kinda su
 
 ## Installation
 
+### Option 1: use precompiled binaries
+
+Statically compiled binaries for OSX, Linux and OpenBSD can be
+downloaded here: https://download.pureftpd.org/piknik
+
+### Option 2: compile the source code
+
 This project is written in Go. So, a Go compiler is required, as well as the following incantation:
 
 ```bash
