@@ -14,16 +14,20 @@ import (
 	"github.com/mitchellh/go-homedir"
 )
 
-// Version - Piknik version
-const Version = "0.3"
-
-// DomainStr - BLAKE2 domain (personalization)
-const DomainStr = "PK"
+const (
+	// Version - Piknik version
+	Version = "0.3"
+	// DomainStr - BLAKE2 domain (personalization)
+	DomainStr = "PK"
+	// DefaultListen - Default value for the Listen parameter
+	DefaultListen = "0.0.0.0:8075"
+	// DefaultConnect - Default value for the Connect parameter
+	DefaultConnect = "127.0.0.1:8075"
+)
 
 type tomlConfig struct {
 	Connect     string
 	Listen      string
-	MaxLen      uint64
 	EncryptSk   string
 	EncryptSkID uint64
 	Psk         string
@@ -35,6 +39,7 @@ type tomlConfig struct {
 type Conf struct {
 	Connect     string
 	Listen      string
+	MaxClients  uint64
 	MaxLen      uint64
 	EncryptSk   []byte
 	EncryptSkID []byte
@@ -62,8 +67,9 @@ func main() {
 	isMove := flag.Bool("move", false, "retrieve and delete the clipboard content")
 	isServer := flag.Bool("server", false, "start a server")
 	isGenKeys := flag.Bool("genkeys", false, "generate keys")
-	isVersion := flag.Bool("version", false, "display version")
+	maxClients := flag.Uint64("maxclients", 10, "maximum number of simultaneous client connections")
 	maxLenMb := flag.Uint64("maxlen", 0, "maximum content length to accept in Mb (0=unlimited)")
+	isVersion := flag.Bool("version", false, "display package version")
 
 	defaultConfigFile := "~/.piknik.toml"
 	if runtime.GOOS == "windows" {
@@ -85,12 +91,12 @@ func main() {
 	}
 	var conf Conf
 	if tomlConf.Listen == "" {
-		conf.Listen = "0.0.0.0:8075"
+		conf.Listen = DefaultListen
 	} else {
 		conf.Listen = tomlConf.Listen
 	}
 	if tomlConf.Connect == "" {
-		conf.Connect = "127.0.0.1:8075"
+		conf.Connect = DefaultConnect
 	} else {
 		conf.Connect = tomlConf.Connect
 	}
@@ -148,6 +154,7 @@ func main() {
 		}
 		conf.SignSk = signSk
 	}
+	conf.MaxClients = *maxClients
 	conf.MaxLen = *maxLenMb * 1024 * 1024
 	if *isServer {
 		RunServer(conf)

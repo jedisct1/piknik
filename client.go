@@ -147,9 +147,12 @@ func RunClient(conf Conf, isCopy bool, isMove bool) {
 		log.Fatal(err)
 	}
 	rbuf := make([]byte, 65)
-	if _, err = io.ReadFull(reader, rbuf); err != nil {
-		log.Fatal(fmt.Sprintf("Incompatible server version (expected version: %v)",
-			client.version))
+	if nbread, err := io.ReadFull(reader, rbuf); err != nil {
+		if nbread < 2 {
+			log.Fatal("The server rejected the connection - Please retry later")
+		} else {
+			log.Fatal("The server doesn't support this protocol")
+		}
 	}
 	if serverVersion := rbuf[0]; serverVersion != client.version {
 		log.Fatal(fmt.Sprintf("Incompatible server version (client version: %v - server version: %v)",

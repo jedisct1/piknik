@@ -10,6 +10,7 @@ import (
 	"log"
 	"net"
 	"sync"
+	"sync/atomic"
 
 	"golang.org/x/crypto/ed25519"
 )
@@ -31,6 +32,7 @@ type StoredContent struct {
 
 var storedContent StoredContent
 var storedContentRWMutex sync.RWMutex
+var clientsCount = uint64(0)
 
 func (cnx *ClientConnection) getOperation(h1 []byte, isMove bool) {
 	conf, reader, writer := cnx.conf, cnx.reader, cnx.writer
@@ -175,6 +177,20 @@ func handleClientConnection(conf Conf, conn net.Conn) {
 	}
 }
 
+func acceptClient(conf Conf, conn net.Conn) {
+	for {
+		count := atomic.LoadUint64(&clientsCount)
+		if count >= conf.MaxClients {
+			conn.Close()
+			return
+		} else if atomic.CompareAndSwapUint64(&clientsCount, count, count+1) {
+			break
+		}
+	}
+	handleClientConnection(conf, conn)
+	atomic.AddUint64(&clientsCount, ^uint64(0))
+}
+
 // RunServer - run a server
 func RunServer(conf Conf) {
 	listen, err := net.Listen("tcp", conf.Listen)
@@ -187,6 +203,6 @@ func RunServer(conf Conf) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		go handleClientConnection(conf, conn)
+		go acceptClient(conf, conn)
 	}
 }
