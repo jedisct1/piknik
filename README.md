@@ -166,8 +166,6 @@ alias pkm='piknik -move'
 alias pkz='piknik -copy < /dev/null'
 ```
 
-Use your own :)
-
 ## Protocol
 
 Common definitions:
