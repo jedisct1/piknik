@@ -17,10 +17,19 @@ import (
 	"golang.org/x/crypto/ed25519"
 )
 
-// Version - Client version
-const Version = byte(4)
+// DefaultClientVersion - Default client version
+const DefaultClientVersion = byte(4)
 
-func copyOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Writer) {
+// Client - Client data
+type Client struct {
+	conf    Conf
+	reader  *bufio.Reader
+	writer  *bufio.Writer
+	version byte
+}
+
+func (client *Client) copyOperation(h1 []byte) {
+	conf, reader, writer := client.conf, client.reader, client.writer
 	content, err := ioutil.ReadAll(os.Stdin)
 	if err != nil {
 		log.Fatal(err)
@@ -39,7 +48,7 @@ func copyOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Wri
 	ciphertext := ciphertextWithNonce[24:]
 	cipher.XORKeyStream(ciphertext, content)
 	signature := ed25519.Sign(conf.SignSk, ciphertextWithNonce)
-	h2 := auth2store(conf, Version, h1, opcode, signature)
+	h2 := auth2store(conf, client.version, h1, opcode, signature)
 	writer.WriteByte(opcode)
 	writer.Write(h2)
 	ciphertextWithNonceLen := uint64(len(ciphertextWithNonce))
@@ -55,20 +64,20 @@ func copyOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Wri
 		log.Fatal(err)
 	}
 	h3 := rbuf
-	wh3 := auth3store(conf, Version, h2)
+	wh3 := auth3store(conf, client.version, h2)
 	if subtle.ConstantTimeCompare(wh3, h3) != 1 {
 		log.Fatal("Incorrect authentication code")
 	}
 	fmt.Println("Sent")
 }
 
-func pasteOperation(conf Conf, h1 []byte, reader *bufio.Reader,
-	writer *bufio.Writer, isMove bool) {
+func (client *Client) pasteOperation(h1 []byte, isMove bool) {
+	conf, reader, writer := client.conf, client.reader, client.writer
 	opcode := byte('G')
 	if isMove {
 		opcode = byte('M')
 	}
-	h2 := auth2get(conf, Version, h1, opcode)
+	h2 := auth2get(conf, client.version, h1, opcode)
 	writer.WriteByte(opcode)
 	writer.Write(h2)
 	if err := writer.Flush(); err != nil {
@@ -83,7 +92,7 @@ func pasteOperation(conf Conf, h1 []byte, reader *bufio.Reader,
 	encryptSkID := rbuf[40:48]
 	_ = encryptSkID
 	signature := rbuf[48:112]
-	wh3 := auth3get(conf, Version, h2, encryptSkID, signature)
+	wh3 := auth3get(conf, client.version, h2, encryptSkID, signature)
 	if subtle.ConstantTimeCompare(wh3, h3) != 1 {
 		log.Fatal("Incorrect authentication code")
 	}
@@ -111,43 +120,50 @@ func pasteOperation(conf Conf, h1 []byte, reader *bufio.Reader,
 	binary.Write(os.Stdout, binary.LittleEndian, content)
 }
 
-// ClientMain - Process a client query
-func ClientMain(conf Conf, isCopy bool, isMove bool) {
+// RunClient - Process a client query
+func RunClient(conf Conf, isCopy bool, isMove bool) {
 	conn, err := net.Dial("tcp", conf.Connect)
 	if err != nil {
 		log.Fatal(fmt.Sprintf("Unable to connect to %v - Is a Piknik server running on that host?",
 			conf.Connect))
 	}
+	defer conn.Close()
+	reader, writer := bufio.NewReader(conn), bufio.NewWriter(conn)
+	client := Client{
+		conf:    conf,
+		reader:  reader,
+		writer:  writer,
+		version: DefaultClientVersion,
+	}
 	r := make([]byte, 32)
 	if _, err = rand.Read(r); err != nil {
 		log.Fatal(err)
 	}
-	h0 := auth0(conf, Version, r)
-	writer := bufio.NewWriter(conn)
-	writer.Write([]byte{Version})
+	h0 := auth0(conf, client.version, r)
+	writer.Write([]byte{client.version})
 	writer.Write(r)
 	writer.Write(h0)
 	if err := writer.Flush(); err != nil {
 		log.Fatal(err)
 	}
-	reader := bufio.NewReader(conn)
 	rbuf := make([]byte, 65)
 	if _, err = io.ReadFull(reader, rbuf); err != nil {
-		log.Fatal(fmt.Sprintf("Incompatible server version (expected version: %v)", Version))
+		log.Fatal(fmt.Sprintf("Incompatible server version (expected version: %v)",
+			client.version))
 	}
-	if rbuf[0] != Version {
+	if serverVersion := rbuf[0]; serverVersion != client.version {
 		log.Fatal(fmt.Sprintf("Incompatible server version (client version: %v - server version: %v)",
-			Version, rbuf[0]))
+			client.version, serverVersion))
 	}
 	r2 := rbuf[1:33]
 	h1 := rbuf[33:65]
-	wh1 := auth1(conf, Version, h0, r2)
+	wh1 := auth1(conf, client.version, h0, r2)
 	if subtle.ConstantTimeCompare(wh1, h1) != 1 {
 		log.Fatal("Incorrect authentication code")
 	}
 	if isCopy {
-		copyOperation(conf, h1, reader, writer)
+		client.copyOperation(h1)
 	} else {
-		pasteOperation(conf, h1, reader, writer, isMove)
+		client.pasteOperation(h1, isMove)
 	}
 }

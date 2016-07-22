@@ -135,8 +135,8 @@ func main() {
 	}
 	conf.MaxLen = *maxLenMb * 1024 * 1024
 	if *isServer {
-		ServerMain(conf)
+		RunServer(conf)
 	} else {
-		ClientMain(conf, *isCopy, *isMove)
+		RunClient(conf, *isCopy, *isMove)
 	}
 }
