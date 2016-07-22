@@ -40,13 +40,13 @@ In order to work around firewalls/NAT gatways, the clipboard content transits vi
 
 Nothing transits without end-to-end encryption; the server cannot learn much about what the clipboard actually contains.
 
-Data can be shared between different operating systems. Even Windows is kinda supported.
+Data can be shared between different operating systems, including MacOS, Linux and Windows.
 
 ## Installation
 
 ### Option 1: use precompiled binaries
 
-Precompiled binaries for OSX, Linux and OpenBSD can be downloaded here:
+Precompiled binaries for MacOS, Linux (i386, x86_64, ARM), Win32, Win64, DragonflyBSD, NetBSD and FreeBSD can be downloaded here:
 https://download.pureftpd.org/piknik
 
 ### Option 2: compile the source code
