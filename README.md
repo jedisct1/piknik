@@ -178,7 +178,8 @@ ct: XChaCha20 ek,n (m)
 Hk,s: BLAKE2b(domain="SK", key=k, salt=s, size=32)
 Len(x): x encoded as a 64-bit little endian unsigned integer
 n: random 192-bit nonce
-r: random 256-bit nonce
+r: random 256-bit client nonce
+r': random 256-bit server nonce
 Sig: Ed25519
 v: 3
 ```
@@ -188,8 +189,8 @@ Copy:
 -> v || r || h0
 h0 := Hk,0(v || r)
 
-<- v || h1
-Hh := Hk,1(v || h0)
+<- v || r' || h1
+Hh := Hk,1(v || r || h0)
 
 -> 'S' || h2 || Len(n || ct) || ekid || s || n || ct
 s := Sig(n || ct)
@@ -206,8 +207,8 @@ Paste: opcode := 'G'
 -> v || r || h0
 h0 := Hk,0(v || r)
 
-<- v || h1
-h1 := Hk,1(v || H0)
+<- v || r' || h1
+h1 := Hk,1(v || r' || H0)
 
 -> opcode || h2
 h2 := Hk,2(h1 || opcode)

@@ -166,7 +166,7 @@ func ClientMain(conf Conf, isCopy bool, isMove bool) {
 		Size:   32,
 		Salt:   []byte{0},
 	})
-	version := byte(3)
+	version := byte(4)
 	hf0.Write([]byte{version})
 	hf0.Write(r)
 	h0 := hf0.Sum(nil)
@@ -179,7 +179,7 @@ func ClientMain(conf Conf, isCopy bool, isMove bool) {
 		return
 	}
 	reader := bufio.NewReader(conn)
-	rbuf := make([]byte, 33)
+	rbuf := make([]byte, 65)
 	if _, err = io.ReadFull(reader, rbuf); err != nil {
 		log.Print(err)
 		return
@@ -187,7 +187,8 @@ func ClientMain(conf Conf, isCopy bool, isMove bool) {
 	if rbuf[0] != version {
 		log.Fatal("Unsupported server version")
 	}
-	h1 := rbuf[1:33]
+	r2 := rbuf[1:33]
+	h1 := rbuf[33:65]
 	hf1, _ := blake2b.New(&blake2b.Config{
 		Key:    conf.Psk,
 		Person: []byte(domainStr),
@@ -195,6 +196,7 @@ func ClientMain(conf Conf, isCopy bool, isMove bool) {
 		Salt:   []byte{1},
 	})
 	hf1.Write([]byte{version})
+	hf1.Write(r2)
 	hf1.Write(h0)
 	wh1 := hf1.Sum(nil)
 	if subtle.ConstantTimeCompare(wh1, h1) != 1 {

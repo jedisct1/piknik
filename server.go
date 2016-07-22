@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"crypto/rand"
 	"crypto/subtle"
 	"encoding/binary"
 	"fmt"
@@ -162,7 +163,7 @@ func handleClient(conf Conf, conn net.Conn) {
 		return
 	}
 	clientVersion := rbuf[0]
-	if clientVersion != 2 && clientVersion != 3 {
+	if clientVersion < 2 || clientVersion > 4 {
 		log.Print("Unsupported client version - Please run the same version on the server and on the client")
 		return
 	}
@@ -180,6 +181,10 @@ func handleClient(conf Conf, conn net.Conn) {
 	if subtle.ConstantTimeCompare(wh0, h0) != 1 {
 		return
 	}
+	r2 := make([]byte, 32)
+	if _, err := rand.Read(r); err != nil {
+		log.Fatal(err)
+	}
 	hf1, _ := blake2b.New(&blake2b.Config{
 		Key:    conf.Psk,
 		Person: []byte(domainStr),
@@ -187,10 +192,16 @@ func handleClient(conf Conf, conn net.Conn) {
 		Salt:   []byte{1},
 	})
 	hf1.Write([]byte{clientVersion})
+	if clientVersion > 3 {
+		hf1.Write(r2)
+	}
 	hf1.Write(h0)
 	h1 := hf1.Sum(nil)
 	writer := bufio.NewWriter(conn)
 	writer.Write([]byte{clientVersion})
+	if clientVersion > 3 {
+		writer.Write(r2)
+	}
 	writer.Write(h1)
 	if err := writer.Flush(); err != nil {
 		log.Print(err)
