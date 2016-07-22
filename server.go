@@ -76,8 +76,8 @@ func getOperation(conf Conf, h1 []byte, reader *bufio.Reader,
 		Salt:   []byte{3},
 	})
 	hf3.Write(h2)
-	hf3.Write(storedContent.encryptSkID)
-	hf3.Write(storedContent.signature)
+	hf3.Write(encryptSkID)
+	hf3.Write(signature)
 	h3 := hf3.Sum(nil)
 	writer.Write(h3)
 	ciphertextWithNonceLen := uint64(len(ciphertextWithNonce))
