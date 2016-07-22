@@ -57,9 +57,9 @@ func copyOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Wri
 	h3 := rbuf
 	wh3 := auth3store(conf, Version, h2)
 	if subtle.ConstantTimeCompare(wh3, h3) != 1 {
-		return
+		log.Fatal("Incorrect authentication code")
 	}
-	fmt.Println("Sent and ACK'd by the server")
+	fmt.Println("Sent")
 }
 
 func pasteOperation(conf Conf, h1 []byte, reader *bufio.Reader,
@@ -85,7 +85,7 @@ func pasteOperation(conf Conf, h1 []byte, reader *bufio.Reader,
 	signature := rbuf[48:112]
 	wh3 := auth3get(conf, Version, h2, encryptSkID, signature)
 	if subtle.ConstantTimeCompare(wh3, h3) != 1 {
-		return
+		log.Fatal("Incorrect authentication code")
 	}
 	if bytes.Equal(conf.EncryptSkID, encryptSkID) == false {
 		wEncryptSkIDStr := binary.LittleEndian.Uint64(conf.EncryptSkID)
@@ -143,7 +143,7 @@ func ClientMain(conf Conf, isCopy bool, isMove bool) {
 	h1 := rbuf[33:65]
 	wh1 := auth1(conf, Version, h0, r2)
 	if subtle.ConstantTimeCompare(wh1, h1) != 1 {
-		return
+		log.Fatal("Incorrect authentication code")
 	}
 	if isCopy {
 		copyOperation(conf, h1, reader, writer)
