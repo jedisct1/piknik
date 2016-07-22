@@ -78,14 +78,14 @@ The default location for the configuration file is `~/.piknik.toml`. With the ex
 
 Sample configuration file for a staging server:
 ```toml
-Listen = "0.0.0.0:8075"	# Edit appropriately
+Listen = "0.0.0.0:8075"         # Edit appropriately
 Psk    = "bf82bab384697243fbf616d3428477a563e33268f0f2307dd14e7245dd8c995d"
 SignPk = "0c41ca9b0a1b5fe4daae789534e72329a93a352a6ad73d6f1d368d8eff37271c"
 ```
 
 Sample configuration file for clients:
 ```toml
-Connect   = "127.0.0.1:8075"	# Edit appropriately
+Connect   = "127.0.0.1:8075"    # Edit appropriately
 Psk       = "bf82bab384697243fbf616d3428477a563e33268f0f2307dd14e7245dd8c995d"
 SignPk    = "0c41ca9b0a1b5fe4daae789534e72329a93a352a6ad73d6f1d368d8eff37271c"
 SignSk    = "cecf1d92052f7ba87da36ac3e4a745b64ade8f9e908e52b4f7cd41235dfe7481"
@@ -144,10 +144,14 @@ Sample shell aliases:
 
 ```bash
 # pko <content> : copy <content> to the clipboard
-pko() { echo "$*" | piknik -copy }
+pko() {
+    echo "$*" | piknik -copy
+}
 
 # pkf <file> : copy the content of <file> to the clipboard
-pkf() { piknik -copy < $1 }
+pkf() {
+    piknik -copy < $1
+}
 
 # pkc : read the content to copy to the clipboard from STDIN
 alias pkc='piknik -copy'
