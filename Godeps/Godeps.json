@@ -4,16 +4,16 @@
 	"Deps": [
 		{
 			"ImportPath": "github.com/BurntSushi/toml",
-			"Comment": "v0.1.0-23-g5c4df71",
-			"Rev": "5c4df71dfe9ac89ef6287afc05e4c1b16ae65a1e"
+			"Comment": "v0.2.0-21-g9906417",
+			"Rev": "99064174e013895bbd9b025c31100bd1d9b590ca"
 		},
 		{
 			"ImportPath": "github.com/minio/blake2b-simd",
-			"Rev": "959f72aaa5d59f6956ee163ea3ad596975cd8d23"
+			"Rev": "326c3216619f9b2362df594d86efd38452eebf74"
 		},
 		{
 			"ImportPath": "github.com/mitchellh/go-homedir",
-			"Rev": "d682a8f0cf139663a984ff12528da460ca963de9"
+			"Rev": "756f7b183b7ab78acdbbee5c7f392838ed459dda"
 		},
 		{
 			"ImportPath": "github.com/yawning/chacha20",
