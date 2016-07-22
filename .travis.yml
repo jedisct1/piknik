@@ -50,6 +50,18 @@ script:
   - tar czpvf piknik-freebsd_amd64-${TRAVIS_TAG:-dev}.tar.gz freebsd-amd64
 
   - go clean
+  - env GOOS=dragonfly GOARCH=amd64 go build
+  - mkdir dragonflybsd-amd64
+  - ln piknik dragonflybsd-amd64/
+  - tar czpvf piknik-dragonflybsd_amd64-${TRAVIS_TAG:-dev}.tar.gz dragonflybsd-amd64
+
+  - go clean
+  - env GOOS=netbsd GOARCH=amd64 go build
+  - mkdir netbsd-amd64
+  - ln piknik netbsd-amd64/
+  - tar czpvf piknik-netbsd_amd64-${TRAVIS_TAG:-dev}.tar.gz netbsd-amd64
+
+  - go clean
   - env GOOS=linux GOARCH=386 go build
   - mkdir linux-i386
   - ln piknik linux-i386/
@@ -62,12 +74,18 @@ script:
   - tar czpvf piknik-linux_x86_64-${TRAVIS_TAG:-dev}.tar.gz linux-x86_64
 
   - go clean
-  - env GOOS=macos GOARCH=amd64 go build
+  - env GOOS=linux GOARCH=arm go build
+  - mkdir linux-arm
+  - ln piknik linux-arm/
+  - tar czpvf piknik-linux_arm-${TRAVIS_TAG:-dev}.tar.gz linux-arm
+
+  - go clean
+  - env GOOS=darwin GOARCH=amd64 go build
   - mkdir macos
   - ln piknik macos/
   - tar czpvf piknik-macos-${TRAVIS_TAG:-dev}.tar.gz macos
 
-  - ls -l piknik-*.tar.gz
+  - ls -l piknik-*.tar.gz piknik-*.zip
 
 deploy:
   provider: releases
