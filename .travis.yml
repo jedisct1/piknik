@@ -16,6 +16,7 @@ script:
   - mkdir ${TRAVIS_OS_NAME}
   - ln piknik ${TRAVIS_OS_NAME}/
   - tar czpvf piknik-${TRAVIS_OS_NAME}_$(arch)-${TRAVIS_TAG:-dev}.tar.gz ${TRAVIS_OS_NAME}
+  - ls -l piknik-*.tar.gz
 
 deploy:
   provider: releases
