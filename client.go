@@ -153,7 +153,8 @@ func pasteOperation(conf Conf, h1 []byte, reader *bufio.Reader,
 func ClientMain(conf Conf, isCopy bool, isMove bool) {
 	conn, err := net.Dial("tcp", conf.Connect)
 	if err != nil {
-		log.Panic(err)
+		log.Fatal(fmt.Sprintf("Unable to connect to %v - Is a Piknik server running on that host?",
+			conf.Connect))
 	}
 	r := make([]byte, 32)
 	if _, err = rand.Read(r); err != nil {
