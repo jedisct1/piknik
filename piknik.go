@@ -13,7 +13,8 @@ import (
 	"github.com/mitchellh/go-homedir"
 )
 
-const domainStr = "PK"
+// DomainStr - BLAKE2 domain (personalization)
+const DomainStr = "PK"
 
 type tomlConfig struct {
 	Connect     string
@@ -107,7 +108,7 @@ func main() {
 		binary.LittleEndian.PutUint64(conf.EncryptSkID, encryptSkID)
 	} else if len(conf.EncryptSk) > 0 {
 		hf, _ := blake2b.New(&blake2b.Config{
-			Person: []byte(domainStr),
+			Person: []byte(DomainStr),
 			Size:   8,
 		})
 		hf.Write(conf.EncryptSk)
