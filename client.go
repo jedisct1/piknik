@@ -31,6 +31,7 @@ func copyOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Wri
 	if err != nil {
 		log.Fatal(err)
 	}
+	opcode := byte('S')
 	ciphertextWithNonce := make([]byte, 24+len(content))
 	copy(ciphertextWithNonce, nonce)
 	ciphertext := ciphertextWithNonce[24:]
@@ -43,11 +44,12 @@ func copyOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Wri
 		Salt:   []byte{2},
 	})
 	hf2.Write(h1)
+	hf2.Write([]byte{opcode})
 	hf2.Write(conf.EncryptSkID)
 	hf2.Write(signature)
 	h2 := hf2.Sum(nil)
 
-	writer.WriteByte(byte('S'))
+	writer.WriteByte(opcode)
 	writer.Write(h2)
 	ciphertextWithNonceLen := uint64(len(ciphertextWithNonce))
 	binary.Write(writer, binary.LittleEndian, ciphertextWithNonceLen)
@@ -78,7 +80,12 @@ func copyOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Wri
 	fmt.Println("Sent and ACK'd by the server")
 }
 
-func pasteOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Writer) {
+func pasteOperation(conf Conf, h1 []byte, reader *bufio.Reader,
+	writer *bufio.Writer, isMove bool) {
+	opcode := byte('G')
+	if isMove {
+		opcode = byte('M')
+	}
 	hf2, _ := blake2b.New(&blake2b.Config{
 		Key:    conf.Psk,
 		Person: []byte(domainStr),
@@ -86,8 +93,9 @@ func pasteOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Wr
 		Salt:   []byte{2},
 	})
 	hf2.Write(h1)
+	hf2.Write([]byte{opcode})
 	h2 := hf2.Sum(nil)
-	writer.WriteByte(byte('G'))
+	writer.WriteByte(opcode)
 	writer.Write(h2)
 	if err := writer.Flush(); err != nil {
 		log.Print(err)
@@ -142,7 +150,7 @@ func pasteOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Wr
 }
 
 // ClientMain - Process a client query
-func ClientMain(conf Conf, isCopy bool) {
+func ClientMain(conf Conf, isCopy bool, isMove bool) {
 	conn, err := net.Dial("tcp", conf.Connect)
 	if err != nil {
 		log.Panic(err)
@@ -157,7 +165,7 @@ func ClientMain(conf Conf, isCopy bool) {
 		Size:   32,
 		Salt:   []byte{0},
 	})
-	version := byte(2)
+	version := byte(3)
 	hf0.Write([]byte{version})
 	hf0.Write(r)
 	h0 := hf0.Sum(nil)
@@ -176,7 +184,7 @@ func ClientMain(conf Conf, isCopy bool) {
 		return
 	}
 	if rbuf[0] != version {
-		return
+		log.Fatal("Unsupported server version")
 	}
 	h1 := rbuf[1:33]
 	hf1, _ := blake2b.New(&blake2b.Config{
@@ -194,6 +202,6 @@ func ClientMain(conf Conf, isCopy bool) {
 	if isCopy {
 		copyOperation(conf, h1, reader, writer)
 	} else {
-		pasteOperation(conf, h1, reader, writer)
+		pasteOperation(conf, h1, reader, writer, isMove)
 	}
 }

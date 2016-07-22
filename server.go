@@ -25,7 +25,8 @@ type StoredContent struct {
 var storedContent StoredContent
 var storedContentRWMutex sync.RWMutex
 
-func getOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Writer) {
+func getOperation(conf Conf, h1 []byte, reader *bufio.Reader,
+	writer *bufio.Writer, clientVersion byte, isMove bool) {
 	rbuf := make([]byte, 32)
 	if _, err := io.ReadFull(reader, rbuf); err != nil {
 		log.Print(err)
@@ -39,16 +40,34 @@ func getOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Writ
 		Salt:   []byte{2},
 	})
 	hf2.Write(h1)
+	if clientVersion > 2 {
+		if isMove {
+			hf2.Write([]byte{'M'})
+		} else {
+			hf2.Write([]byte{'G'})
+		}
+	}
 	wh2 := hf2.Sum(nil)
 	if subtle.ConstantTimeCompare(wh2, h2) != 1 {
 		return
 	}
 
-	storedContentRWMutex.RLock()
-	encryptSkID := storedContent.encryptSkID
-	signature := storedContent.signature
-	ciphertextWithNonce := storedContent.ciphertextWithNonce
-	storedContentRWMutex.RUnlock()
+	var encryptSkID, signature, ciphertextWithNonce []byte
+	if isMove {
+		storedContentRWMutex.Lock()
+		encryptSkID, signature, ciphertextWithNonce =
+			storedContent.encryptSkID, storedContent.signature,
+			storedContent.ciphertextWithNonce
+		storedContent.encryptSkID, storedContent.signature,
+			storedContent.ciphertextWithNonce = nil, nil, nil
+		storedContentRWMutex.Unlock()
+	} else {
+		storedContentRWMutex.RLock()
+		encryptSkID, signature, ciphertextWithNonce =
+			storedContent.encryptSkID, storedContent.signature,
+			storedContent.ciphertextWithNonce
+		storedContentRWMutex.RUnlock()
+	}
 
 	hf3, _ := blake2b.New(&blake2b.Config{
 		Key:    conf.Psk,
@@ -72,7 +91,8 @@ func getOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Writ
 	}
 }
 
-func storeOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Writer) {
+func storeOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Writer,
+	clientVersion byte) {
 	rbuf := make([]byte, 112)
 	if _, err := io.ReadFull(reader, rbuf); err != nil {
 		log.Print(err)
@@ -94,6 +114,9 @@ func storeOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Wr
 		Salt:   []byte{2},
 	})
 	hf2.Write(h1)
+	if clientVersion > 2 {
+		hf2.Write([]byte{'S'})
+	}
 	hf2.Write(encryptedSkID)
 	hf2.Write(signature)
 	wh2 := hf2.Sum(nil)
@@ -138,9 +161,9 @@ func handleClient(conf Conf, conn net.Conn) {
 		log.Print(err)
 		return
 	}
-	version := rbuf[0]
-	if version != 2 {
-		log.Print("Unsupported version - Please run the same version on the server and on the client")
+	clientVersion := rbuf[0]
+	if clientVersion != 2 && clientVersion != 3 {
+		log.Print("Unsupported client version - Please run the same version on the server and on the client")
 		return
 	}
 	r := rbuf[1:33]
@@ -151,7 +174,7 @@ func handleClient(conf Conf, conn net.Conn) {
 		Size:   32,
 		Salt:   []byte{0},
 	})
-	hf0.Write([]byte{version})
+	hf0.Write([]byte{clientVersion})
 	hf0.Write(r)
 	wh0 := hf0.Sum(nil)
 	if subtle.ConstantTimeCompare(wh0, h0) != 1 {
@@ -163,25 +186,27 @@ func handleClient(conf Conf, conn net.Conn) {
 		Size:   32,
 		Salt:   []byte{1},
 	})
-	hf1.Write([]byte{version})
+	hf1.Write([]byte{clientVersion})
 	hf1.Write(h0)
 	h1 := hf1.Sum(nil)
 	writer := bufio.NewWriter(conn)
-	writer.Write([]byte{version})
+	writer.Write([]byte{clientVersion})
 	writer.Write(h1)
 	if err := writer.Flush(); err != nil {
 		log.Print(err)
 		return
 	}
-	operation, err := reader.ReadByte()
+	opcode, err := reader.ReadByte()
 	if err != nil {
 		return
 	}
-	switch operation {
+	switch opcode {
 	case byte('G'):
-		getOperation(conf, h1, reader, writer)
+		getOperation(conf, h1, reader, writer, clientVersion, false)
+	case byte('M'):
+		getOperation(conf, h1, reader, writer, clientVersion, true)
 	case byte('S'):
-		storeOperation(conf, h1, reader, writer)
+		storeOperation(conf, h1, reader, writer, clientVersion)
 	}
 }
 

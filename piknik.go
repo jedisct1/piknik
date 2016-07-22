@@ -47,8 +47,9 @@ func expandConfigFile(path string) string {
 }
 
 func main() {
-	isCopy := flag.Bool("copy", false, "store content (copy) - default is to retrieve the clipboard content (paste)")
-	_ = flag.Bool("paste", false, "retrieve content (paste) - ignored")
+	isCopy := flag.Bool("copy", false, "store content (copy)")
+	_ = flag.Bool("paste", false, "retrieve the content (paste) - this is the default action")
+	isMove := flag.Bool("move", false, "retrieve and delete the clipboard content")
 	isServer := flag.Bool("server", false, "start a server")
 	isGenKeys := flag.Bool("genkeys", false, "generate keys")
 	maxLenMb := flag.Uint64("maxlen", 0, "maximum content length to accept in Mb (0=unlimited)")
@@ -135,6 +136,6 @@ func main() {
 	if *isServer {
 		ServerMain(conf)
 	} else {
-		ClientMain(conf, *isCopy)
+		ClientMain(conf, *isCopy, *isMove)
 	}
 }

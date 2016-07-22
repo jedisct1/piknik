@@ -124,6 +124,14 @@ $ piknik -paste
 Retrieve the content of the clipboard and spit it to the standard output.
 `-paste` is actually a no-op. This is the default action if `-copy` was not specified.
 
+```bash
+$ piknik -move
+```
+
+Retrieve the content of the clipboard, spit it to the standard output
+and clear the clipboard. Not necessarily in this order.
+Only one lucky client will have the privilege to see the content.
+
 That's it.
 
 Feed it anything. Text, binary data, whatever. As long as it fits in memory.
@@ -167,7 +175,7 @@ Len(x): x encoded as a 64-bit little endian unsigned integer
 n: random 192-bit nonce
 r: random 256-bit nonce
 Sig: Ed25519
-v: 2
+v: 3
 ```
 
 Copy:
@@ -180,21 +188,24 @@ Hh := Hk,1(v || h0)
 
 -> 'S' || h2 || Len(n || ct) || ekid || s || n || ct
 s := Sig(n || ct)
-h2 := Hk,2(h1 || ekid || s)
+h2 := Hk,2(h1 || 'S' || ekid || s)
 
 <- Hk,3(h2)
 ```
 
-Paste:
+Move/Paste:
 ```
+Move:  opcode := 'M'
+Paste: opcode := 'G'
+
 -> v || r || h0
 h0 := Hk,0(v || r)
 
 <- v || h1
 h1 := Hk,1(v || H0)
 
--> 'G' || h2
-h2 := Hk,2(h1)
+-> opcode || h2
+h2 := Hk,2(h1 || opcode)
 
 <- Hk,3(h2 || ekid || s) || Len(n || ct) || ekid || s || n || ct
 s := Sig(n || ct)
