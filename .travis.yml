@@ -11,11 +11,11 @@ go:
 - tip
 
 script:
-  echo $TRAVIS_GO_VERSION
-  ./test.sh
-  mkdir ${TRAVIS_OS_NAME}
-  ln piknik ${TRAVIS_OS_NAME}/
-  tar czpvf piknik-${TRAVIS_OS_NAME}_$(arch)-${TRAVIS_TAG}.tar.gz ${TRAVIS_OS_NAME}
+  - echo $TRAVIS_GO_VERSION
+  - ./test.sh
+  - mkdir ${TRAVIS_OS_NAME}
+  - ln piknik ${TRAVIS_OS_NAME}/
+  - tar czpvf piknik-${TRAVIS_OS_NAME}_$(arch)-${TRAVIS_TAG:-dev}.tar.gz ${TRAVIS_OS_NAME}
 
 deploy:
   provider: releases
