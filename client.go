@@ -181,11 +181,11 @@ func ClientMain(conf Conf, isCopy bool, isMove bool) {
 	reader := bufio.NewReader(conn)
 	rbuf := make([]byte, 65)
 	if _, err = io.ReadFull(reader, rbuf); err != nil {
-		log.Print(err)
-		return
+		log.Fatal(fmt.Sprintf("Incompatible server version (expected version: %v)", version))
 	}
 	if rbuf[0] != version {
-		log.Fatal("Unsupported server version")
+		log.Fatal(fmt.Sprintf("Incompatible server version (client version: %v - server version: %v)",
+			version, rbuf[0]))
 	}
 	r2 := rbuf[1:33]
 	h1 := rbuf[33:65]
