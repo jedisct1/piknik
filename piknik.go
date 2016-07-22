@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"runtime"
@@ -12,6 +13,9 @@ import (
 	blake2b "github.com/minio/blake2b-simd"
 	"github.com/mitchellh/go-homedir"
 )
+
+// Version - Piknik version
+const Version = "0.3"
 
 // DomainStr - BLAKE2 domain (personalization)
 const DomainStr = "PK"
@@ -47,19 +51,30 @@ func expandConfigFile(path string) string {
 	return file
 }
 
+func version() {
+	fmt.Printf("\nPiknik v%v (protocol version: %v)\n",
+		Version, DefaultClientVersion)
+}
+
 func main() {
 	isCopy := flag.Bool("copy", false, "store content (copy)")
 	_ = flag.Bool("paste", false, "retrieve the content (paste) - this is the default action")
 	isMove := flag.Bool("move", false, "retrieve and delete the clipboard content")
 	isServer := flag.Bool("server", false, "start a server")
 	isGenKeys := flag.Bool("genkeys", false, "generate keys")
+	isVersion := flag.Bool("version", false, "display version")
 	maxLenMb := flag.Uint64("maxlen", 0, "maximum content length to accept in Mb (0=unlimited)")
+
 	defaultConfigFile := "~/.piknik.toml"
 	if runtime.GOOS == "windows" {
 		defaultConfigFile = "~/piknik.toml"
 	}
 	configFile := flag.String("config", defaultConfigFile, "configuration file")
 	flag.Parse()
+	if *isVersion {
+		version()
+		return
+	}
 	tomlData, err := ioutil.ReadFile(expandConfigFile(*configFile))
 	if err != nil && *isGenKeys == false {
 		log.Fatal(err)
