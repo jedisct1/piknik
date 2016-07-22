@@ -48,13 +48,11 @@ func copyOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Wri
 	writer.Write(signature)
 	writer.Write(ciphertextWithNonce)
 	if err := writer.Flush(); err != nil {
-		log.Print(err)
-		return
+		log.Fatal(err)
 	}
 	rbuf := make([]byte, 32)
 	if _, err = io.ReadFull(reader, rbuf); err != nil {
-		log.Print(err)
-		return
+		log.Fatal(err)
 	}
 	h3 := rbuf
 	wh3 := auth3store(conf, Version, h2)
@@ -74,13 +72,11 @@ func pasteOperation(conf Conf, h1 []byte, reader *bufio.Reader,
 	writer.WriteByte(opcode)
 	writer.Write(h2)
 	if err := writer.Flush(); err != nil {
-		log.Print(err)
-		return
+		log.Fatal(err)
 	}
 	rbuf := make([]byte, 112)
 	if _, err := io.ReadFull(reader, rbuf); err != nil {
-		log.Print(err)
-		return
+		log.Fatal(err)
 	}
 	h3 := rbuf[0:32]
 	ciphertextWithNonceLen := binary.LittleEndian.Uint64(rbuf[32:40])
@@ -99,11 +95,10 @@ func pasteOperation(conf Conf, h1 []byte, reader *bufio.Reader,
 	}
 	ciphertextWithNonce := make([]byte, ciphertextWithNonceLen)
 	if _, err := io.ReadFull(reader, ciphertextWithNonce); err != nil {
-		log.Print(err)
-		return
+		log.Fatal(err)
 	}
 	if ed25519.Verify(conf.SignPk, ciphertextWithNonce, signature) != true {
-		return
+		log.Fatal("Signature doesn't verify")
 	}
 	nonce := ciphertextWithNonce[0:24]
 	cipher, err := chacha20.NewCipher(conf.EncryptSk, nonce)
@@ -133,8 +128,7 @@ func ClientMain(conf Conf, isCopy bool, isMove bool) {
 	writer.Write(r)
 	writer.Write(h0)
 	if err := writer.Flush(); err != nil {
-		log.Print(err)
-		return
+		log.Fatal(err)
 	}
 	reader := bufio.NewReader(conn)
 	rbuf := make([]byte, 65)
