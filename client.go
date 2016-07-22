@@ -13,10 +13,12 @@ import (
 	"net"
 	"os"
 
-	"github.com/minio/blake2b-simd"
 	"github.com/yawning/chacha20"
 	"golang.org/x/crypto/ed25519"
 )
+
+// Version - Client version
+const Version = byte(4)
 
 func copyOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Writer) {
 	content, err := ioutil.ReadAll(os.Stdin)
@@ -37,18 +39,7 @@ func copyOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Wri
 	ciphertext := ciphertextWithNonce[24:]
 	cipher.XORKeyStream(ciphertext, content)
 	signature := ed25519.Sign(conf.SignSk, ciphertextWithNonce)
-	hf2, _ := blake2b.New(&blake2b.Config{
-		Key:    conf.Psk,
-		Person: []byte(domainStr),
-		Size:   32,
-		Salt:   []byte{2},
-	})
-	hf2.Write(h1)
-	hf2.Write([]byte{opcode})
-	hf2.Write(conf.EncryptSkID)
-	hf2.Write(signature)
-	h2 := hf2.Sum(nil)
-
+	h2 := auth2store(conf, Version, h1, opcode, signature)
 	writer.WriteByte(opcode)
 	writer.Write(h2)
 	ciphertextWithNonceLen := uint64(len(ciphertextWithNonce))
@@ -66,14 +57,7 @@ func copyOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Wri
 		return
 	}
 	h3 := rbuf
-	hf3, _ := blake2b.New(&blake2b.Config{
-		Key:    conf.Psk,
-		Person: []byte(domainStr),
-		Size:   32,
-		Salt:   []byte{3},
-	})
-	hf3.Write(h2)
-	wh3 := hf3.Sum(nil)
+	wh3 := auth3store(conf, Version, h2)
 	if subtle.ConstantTimeCompare(wh3, h3) != 1 {
 		return
 	}
@@ -86,15 +70,7 @@ func pasteOperation(conf Conf, h1 []byte, reader *bufio.Reader,
 	if isMove {
 		opcode = byte('M')
 	}
-	hf2, _ := blake2b.New(&blake2b.Config{
-		Key:    conf.Psk,
-		Person: []byte(domainStr),
-		Size:   32,
-		Salt:   []byte{2},
-	})
-	hf2.Write(h1)
-	hf2.Write([]byte{opcode})
-	h2 := hf2.Sum(nil)
+	h2 := auth2get(conf, Version, h1, opcode)
 	writer.WriteByte(opcode)
 	writer.Write(h2)
 	if err := writer.Flush(); err != nil {
@@ -111,16 +87,7 @@ func pasteOperation(conf Conf, h1 []byte, reader *bufio.Reader,
 	encryptSkID := rbuf[40:48]
 	_ = encryptSkID
 	signature := rbuf[48:112]
-	hf3, _ := blake2b.New(&blake2b.Config{
-		Key:    conf.Psk,
-		Person: []byte(domainStr),
-		Size:   32,
-		Salt:   []byte{3},
-	})
-	hf3.Write(h2)
-	hf3.Write(encryptSkID)
-	hf3.Write(signature)
-	wh3 := hf3.Sum(nil)
+	wh3 := auth3get(conf, Version, h2, encryptSkID, signature)
 	if subtle.ConstantTimeCompare(wh3, h3) != 1 {
 		return
 	}
@@ -160,18 +127,9 @@ func ClientMain(conf Conf, isCopy bool, isMove bool) {
 	if _, err = rand.Read(r); err != nil {
 		log.Fatal(err)
 	}
-	hf0, _ := blake2b.New(&blake2b.Config{
-		Key:    conf.Psk,
-		Person: []byte(domainStr),
-		Size:   32,
-		Salt:   []byte{0},
-	})
-	version := byte(4)
-	hf0.Write([]byte{version})
-	hf0.Write(r)
-	h0 := hf0.Sum(nil)
+	h0 := auth0(conf, Version, r)
 	writer := bufio.NewWriter(conn)
-	writer.Write([]byte{version})
+	writer.Write([]byte{Version})
 	writer.Write(r)
 	writer.Write(h0)
 	if err := writer.Flush(); err != nil {
@@ -181,24 +139,15 @@ func ClientMain(conf Conf, isCopy bool, isMove bool) {
 	reader := bufio.NewReader(conn)
 	rbuf := make([]byte, 65)
 	if _, err = io.ReadFull(reader, rbuf); err != nil {
-		log.Fatal(fmt.Sprintf("Incompatible server version (expected version: %v)", version))
+		log.Fatal(fmt.Sprintf("Incompatible server version (expected version: %v)", Version))
 	}
-	if rbuf[0] != version {
+	if rbuf[0] != Version {
 		log.Fatal(fmt.Sprintf("Incompatible server version (client version: %v - server version: %v)",
-			version, rbuf[0]))
+			Version, rbuf[0]))
 	}
 	r2 := rbuf[1:33]
 	h1 := rbuf[33:65]
-	hf1, _ := blake2b.New(&blake2b.Config{
-		Key:    conf.Psk,
-		Person: []byte(domainStr),
-		Size:   32,
-		Salt:   []byte{1},
-	})
-	hf1.Write([]byte{version})
-	hf1.Write(r2)
-	hf1.Write(h0)
-	wh1 := hf1.Sum(nil)
+	wh1 := auth1(conf, Version, h0, r2)
 	if subtle.ConstantTimeCompare(wh1, h1) != 1 {
 		return
 	}

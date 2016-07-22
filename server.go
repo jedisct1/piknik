@@ -11,8 +11,6 @@ import (
 	"net"
 	"sync"
 
-	"github.com/minio/blake2b-simd"
-
 	"golang.org/x/crypto/ed25519"
 )
 
@@ -34,21 +32,11 @@ func getOperation(conf Conf, h1 []byte, reader *bufio.Reader,
 		return
 	}
 	h2 := rbuf
-	hf2, _ := blake2b.New(&blake2b.Config{
-		Key:    conf.Psk,
-		Person: []byte(domainStr),
-		Size:   32,
-		Salt:   []byte{2},
-	})
-	hf2.Write(h1)
-	if clientVersion > 2 {
-		if isMove {
-			hf2.Write([]byte{'M'})
-		} else {
-			hf2.Write([]byte{'G'})
-		}
+	opcode := byte('G')
+	if isMove {
+		opcode = byte('M')
 	}
-	wh2 := hf2.Sum(nil)
+	wh2 := auth2get(conf, clientVersion, h1, opcode)
 	if subtle.ConstantTimeCompare(wh2, h2) != 1 {
 		return
 	}
@@ -70,16 +58,7 @@ func getOperation(conf Conf, h1 []byte, reader *bufio.Reader,
 		storedContentRWMutex.RUnlock()
 	}
 
-	hf3, _ := blake2b.New(&blake2b.Config{
-		Key:    conf.Psk,
-		Person: []byte(domainStr),
-		Size:   32,
-		Salt:   []byte{3},
-	})
-	hf3.Write(h2)
-	hf3.Write(encryptSkID)
-	hf3.Write(signature)
-	h3 := hf3.Sum(nil)
+	h3 := auth3get(conf, clientVersion, h2, encryptSkID, signature)
 	writer.Write(h3)
 	ciphertextWithNonceLen := uint64(len(ciphertextWithNonce))
 	binary.Write(writer, binary.LittleEndian, ciphertextWithNonceLen)
@@ -108,19 +87,8 @@ func storeOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Wr
 	}
 	encryptedSkID := rbuf[40:48]
 	signature := rbuf[48:112]
-	hf2, _ := blake2b.New(&blake2b.Config{
-		Key:    conf.Psk,
-		Person: []byte(domainStr),
-		Size:   32,
-		Salt:   []byte{2},
-	})
-	hf2.Write(h1)
-	if clientVersion > 2 {
-		hf2.Write([]byte{'S'})
-	}
-	hf2.Write(encryptedSkID)
-	hf2.Write(signature)
-	wh2 := hf2.Sum(nil)
+	opcode := byte('S')
+	wh2 := auth2store(conf, Version, h1, opcode, signature)
 	if subtle.ConstantTimeCompare(wh2, h2) != 1 {
 		return
 	}
@@ -132,14 +100,7 @@ func storeOperation(conf Conf, h1 []byte, reader *bufio.Reader, writer *bufio.Wr
 	if ed25519.Verify(conf.SignPk, ciphertextWithNonce, signature) != true {
 		return
 	}
-	hf3, _ := blake2b.New(&blake2b.Config{
-		Key:    conf.Psk,
-		Person: []byte(domainStr),
-		Size:   32,
-		Salt:   []byte{3},
-	})
-	hf3.Write(h2)
-	h3 := hf3.Sum(nil)
+	h3 := auth3store(conf, clientVersion, h2)
 
 	storedContentRWMutex.Lock()
 	storedContent.encryptSkID = encryptedSkID
@@ -169,15 +130,7 @@ func handleClient(conf Conf, conn net.Conn) {
 	}
 	r := rbuf[1:33]
 	h0 := rbuf[33:65]
-	hf0, _ := blake2b.New(&blake2b.Config{
-		Key:    conf.Psk,
-		Person: []byte(domainStr),
-		Size:   32,
-		Salt:   []byte{0},
-	})
-	hf0.Write([]byte{clientVersion})
-	hf0.Write(r)
-	wh0 := hf0.Sum(nil)
+	wh0 := auth0(conf, clientVersion, r)
 	if subtle.ConstantTimeCompare(wh0, h0) != 1 {
 		return
 	}
@@ -185,18 +138,7 @@ func handleClient(conf Conf, conn net.Conn) {
 	if _, err := rand.Read(r); err != nil {
 		log.Fatal(err)
 	}
-	hf1, _ := blake2b.New(&blake2b.Config{
-		Key:    conf.Psk,
-		Person: []byte(domainStr),
-		Size:   32,
-		Salt:   []byte{1},
-	})
-	hf1.Write([]byte{clientVersion})
-	if clientVersion > 3 {
-		hf1.Write(r2)
-	}
-	hf1.Write(h0)
-	h1 := hf1.Sum(nil)
+	h1 := auth1(conf, clientVersion, h0, r2)
 	writer := bufio.NewWriter(conn)
 	writer.Write([]byte{clientVersion})
 	if clientVersion > 3 {
