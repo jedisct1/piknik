@@ -77,7 +77,7 @@ $ piknik -genkeys
 
 This generates random keys (highly recommended).
 
-A temporary alternative is to derive the keys from a password. The same password will always generate the same set of keys. In order to do so, add the `-password` switch:
+A temporary alternative is to derive the keys from a password. The same password will always generate the same set of keys, on all platforms. In order to do so, add the `-password` switch:
 
 ```bash
 $ piknik -genkeys -password
