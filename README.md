@@ -246,3 +246,7 @@ h2 := Hk,2(h1 || opcode)
 <- Hk,3(h2 || ekid || s) || Len(n || ct) || ekid || s || n || ct
 s := Sig(n || ct)
 ```
+
+## License
+
+[ISC](https://en.wikipedia.org/wiki/ISC_license).
