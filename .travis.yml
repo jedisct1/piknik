@@ -6,7 +6,7 @@ os:
  - linux
 
 go:
-- 1.6
+- 1.6.3
 - tip
 
 script:
@@ -105,7 +105,7 @@ deploy:
   on:
     repo: jedisct1/piknik
     tags: true
-    condition: "${TRAVIS_GO_VERSION} == 1.6"
+    condition: "${TRAVIS_GO_VERSION} == 1.6.3"
 
 after_deploy:
   - ls -l piknik-*.tar.gz
