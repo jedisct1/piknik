@@ -75,7 +75,15 @@ Piknik requires a bunch of keys. Generate them all with
 $ piknik -genkeys
 ```
 
-The output of that command is all you need to build a configuration file.
+This generates random keys (highly recommended).
+
+A temporary alternative is to derive the keys from a password. The same password will always generate the same set of keys. In order to do so, add the `-password` switch:
+
+```bash
+$ piknik -genkeys -password
+```
+
+The output of the `-genkeys` command is all you need to build a configuration file.
 
 Only copy the section for servers on the staging server. Only copy the section for clients on the clients.
 
