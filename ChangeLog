@@ -1,0 +1,29 @@
+* Version 0.5
+ - A new switch, `-password` can now follow `-genkeys` in order to
+deterministically derive the keys from a password. Not recommended,
+but it can be useful to create an temporary initial configuration on air
+gapped devices.
+ - An Homebrew (tap) formula was added to easily install it and keep it up
+to date on MacOS.
+
+* Version 0.4
+ - Servers recomputed the key ID instead of reading it from the
+client, requiring the `EncryptSk` property to be present. This is no
+longer the case. Thanks to jpmens@ for the bug report.
+
+* Version 0.3
+ - Improved documentation
+ - The protocol was slightly changed; old clients are still supported
+but the server must be updated in order to communicate with clients
+running this version.
+ - Precompiled binaries are now available for many architectures.
+
+* Version 0.2
+ - New `-move` operation to paste the clipboard content and delete it
+afterwards. This introduces a protocol change, requiring an update to
+the server and to the clients.
+
+* Version 0.1
+ - Initial public release.
+
+
