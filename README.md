@@ -1,7 +1,5 @@
 # piknik
-Copy/paste anything over the network
-
-[Watch a live Piknik demo on Asciinema](https://asciinema.org/a/80708)
+Copy/paste anything over the network ([watch a demo on Asciinema](https://asciinema.org/a/80708))
 
 ## Blurb
 Ever needed a copy/paste clipboard that works over the network?
@@ -168,6 +166,20 @@ alias pkm='piknik -move'
 # pkz : delete the clipboard content
 alias pkz='piknik -copy < /dev/null'
 ```
+
+## Use cases
+
+Use it to:
+
+- Securely send passwords, API keys, URLs from one host to another
+- Share a clipboard with your teammates (which can be a lot of fun)
+- Copy data to/from isolated VMs, without the VMWare tools or shared volumes (great for unsupported operating systems and malware sandboxes)
+- Copy files from/to a Windows machine, without Samba or SSH
+- Transfer data between hosts sitting behind firewalls/NAT gateways
+- Easily copy configuration files to multiple hosts
+- Start a slow download at the office, retrieve it later at home
+- Quickly backup a file to the cloud before messing with it
+- ...and more!
 
 ## Protocol
 
