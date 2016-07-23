@@ -50,7 +50,7 @@ func auth2get(conf Conf, clientVersion byte, h1 []byte, opcode byte) []byte {
 }
 
 func auth2store(conf Conf, clientVersion byte, h1 []byte, opcode byte,
-	signature []byte) []byte {
+	encryptSkID []byte, signature []byte) []byte {
 	hf2, _ := blake2b.New(&blake2b.Config{
 		Key:    conf.Psk,
 		Person: []byte(DomainStr),
@@ -59,7 +59,7 @@ func auth2store(conf Conf, clientVersion byte, h1 []byte, opcode byte,
 	})
 	hf2.Write(h1)
 	hf2.Write([]byte{opcode})
-	hf2.Write(conf.EncryptSkID)
+	hf2.Write(encryptSkID)
 	hf2.Write(signature)
 	h2 := hf2.Sum(nil)
 

@@ -48,7 +48,7 @@ func (client *Client) copyOperation(h1 []byte) {
 	ciphertext := ciphertextWithNonce[24:]
 	cipher.XORKeyStream(ciphertext, content)
 	signature := ed25519.Sign(conf.SignSk, ciphertextWithNonce)
-	h2 := auth2store(conf, client.version, h1, opcode, signature)
+	h2 := auth2store(conf, client.version, h1, opcode, conf.EncryptSkID, signature)
 	writer.WriteByte(opcode)
 	writer.Write(h2)
 	ciphertextWithNonceLen := uint64(len(ciphertextWithNonce))
