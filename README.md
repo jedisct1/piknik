@@ -173,7 +173,7 @@ Use it to:
 
 - Securely send passwords, API keys, URLs from one host to another
 - Share a clipboard with your teammates (which can be a lot of fun)
-- Copy data to/from isolated VMs, without the VMWare tools or shared volumes (great for unsupported operating systems and malware sandboxes)
+- Copy data from/to isolated VMs, without the VMWare tools or shared volumes (great for unsupported operating systems and malware sandboxes)
 - Copy files from/to a Windows machine, without Samba or SSH
 - Transfer data between hosts sitting behind firewalls/NAT gateways
 - Easily copy configuration files to multiple hosts
