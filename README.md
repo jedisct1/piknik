@@ -47,7 +47,7 @@ Data can be shared between different operating systems, including MacOS, Linux a
 ### Option 1: use precompiled binaries
 
 Precompiled binaries for MacOS, Linux (i386, x86_64, ARM), Win32, Win64, DragonflyBSD, NetBSD and FreeBSD can be downloaded here:
-https://download.pureftpd.org/piknik
+https://github.com/jedisct1/piknik/releases/latest
 
 ### Option 2: compile the source code
 
