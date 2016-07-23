@@ -190,7 +190,7 @@ Copy:
 h0 := Hk,0(v || r)
 
 <- v || r' || h1
-Hh := Hk,1(v || r || h0)
+Hh := Hk,1(v || r' || h0)
 
 -> 'S' || h2 || Len(n || ct) || ekid || s || n || ct
 s := Sig(n || ct)
