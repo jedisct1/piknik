@@ -56,6 +56,12 @@ script:
   - tar czpvf piknik-dragonflybsd_amd64-${TRAVIS_TAG:-dev}.tar.gz dragonflybsd-amd64
 
   - go clean
+  - env GOOS=netbsd GOARCH=386 go build
+  - mkdir netbsd-i386
+  - ln piknik netbsd-i386/
+  - tar czpvf piknik-netbsd_i386-${TRAVIS_TAG:-dev}.tar.gz netbsd-i386
+
+  - go clean
   - env GOOS=netbsd GOARCH=amd64 go build
   - mkdir netbsd-amd64
   - ln piknik netbsd-amd64/
