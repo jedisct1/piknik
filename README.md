@@ -1,4 +1,5 @@
-[![Build Status](https://travis-ci.org/jedisct1/piknik.svg?branch=master)](https://travis-ci.org/jedisct1/piknik?branch=master)
+![Latest release](https://img.shields.io/github/release/jedisct1/piknik.svg?maxAge=2592000)
+[![Build status](https://travis-ci.org/jedisct1/piknik.svg?branch=master)](https://travis-ci.org/jedisct1/piknik?branch=master)
 
 # piknik
 Copy/paste anything over the network ([watch a demo on Asciinema](https://asciinema.org/a/80708))
