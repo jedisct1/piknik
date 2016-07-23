@@ -67,6 +67,7 @@ func main() {
 	isMove := flag.Bool("move", false, "retrieve and delete the clipboard content")
 	isServer := flag.Bool("server", false, "start a server")
 	isGenKeys := flag.Bool("genkeys", false, "generate keys")
+	isDeterministic := flag.Bool("password", false, "derive the keys from a password (default=random keys)")
 	maxClients := flag.Uint64("maxclients", 10, "maximum number of simultaneous client connections")
 	maxLenMb := flag.Uint64("maxlen", 0, "maximum content length to accept in Mb (0=unlimited)")
 	isVersion := flag.Bool("version", false, "display package version")
@@ -101,7 +102,11 @@ func main() {
 		conf.Connect = tomlConf.Connect
 	}
 	if *isGenKeys {
-		genKeys(conf, *configFile)
+		leKey := ""
+		if *isDeterministic {
+			leKey = getPassword("Password> ")
+		}
+		genKeys(conf, *configFile, leKey)
 		return
 	}
 	pskHex := tomlConf.Psk
