@@ -1,6 +1,8 @@
 # piknik
 Copy/paste anything over the network
 
+[![Piknik demo](https://raw.github.com/jedisct1/piknik/master/asciicast.gif)](https://asciinema.org/a/80708)
+
 ## Blurb
 Ever needed a copy/paste clipboard that works over the network?
 
