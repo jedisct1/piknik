@@ -49,7 +49,14 @@ Data can be shared between different operating systems, including MacOS, Linux a
 Precompiled binaries for MacOS, Linux (i386, x86_64, ARM), Win32, Win64, DragonflyBSD, NetBSD and FreeBSD can be downloaded here:
 https://github.com/jedisct1/piknik/releases/latest
 
-### Option 2: compile the source code
+### Option 2 (on MacOS): use Homebrew
+
+```bash
+$ brew tap jedisct1/piknik
+$ brew install piknik
+```
+
+### Option 3: compile the source code
 
 This project is written in Go. So, a Go compiler is required, as well as the following incantation:
 
