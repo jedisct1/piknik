@@ -1,4 +1,4 @@
-![Latest release](https://img.shields.io/github/release/jedisct1/piknik.svg?maxAge=2592000)
+[![Latest release](https://img.shields.io/github/release/jedisct1/piknik.svg)](https://github.com/jedisct1/piknik/releases/latest)
 [![Build status](https://travis-ci.org/jedisct1/piknik.svg?branch=master)](https://travis-ci.org/jedisct1/piknik?branch=master)
 
 # piknik
