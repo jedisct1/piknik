@@ -95,14 +95,16 @@ func (cnx *ClientConnection) storeOperation(h1 []byte) {
 			ciphertextWithNonceLen, conf.MaxLen, conf.MaxLen/(1024*1024))
 		return
 	}
-	encryptedSkID := rbuf[40:48]
+	encryptSkID := rbuf[40:48]
 	signature := rbuf[48:112]
 	opcode := byte('S')
-	wh2 := auth2store(conf, cnx.clientVersion, h1, opcode, signature)
+
+	wh2 := auth2store(conf, cnx.clientVersion, h1, opcode, encryptSkID, signature)
 	if subtle.ConstantTimeCompare(wh2, h2) != 1 {
 		return
 	}
 	ciphertextWithNonce := make([]byte, ciphertextWithNonceLen)
+
 	if _, err := io.ReadFull(reader, ciphertextWithNonce); err != nil {
 		log.Print(err)
 		return
@@ -113,7 +115,7 @@ func (cnx *ClientConnection) storeOperation(h1 []byte) {
 	h3 := auth3store(conf, cnx.clientVersion, h2)
 
 	storedContentRWMutex.Lock()
-	storedContent.encryptSkID = encryptedSkID
+	storedContent.encryptSkID = encryptSkID
 	storedContent.signature = signature
 	storedContent.ciphertextWithNonce = ciphertextWithNonce
 	storedContentRWMutex.Unlock()
