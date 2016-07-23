@@ -93,7 +93,8 @@ EncryptSk = "2f530eb85e59c1977fce726df9f87345206f2a3d40bf91f9e0e9eeec2c59a3e4"
 ```
 
 Do not use these, uh? Get your very own keys with the `piknik -genkeys` command.
-And edit the `Connect` and `Listen` properties to reflect the staging server IP and port.
+Edit the `Connect` and `Listen` properties to reflect the staging server IP and port.
+And `chmod 600 ~/.piknik.toml` might not be a bad idea.
 
 Don't like the default config file location? Use the `-config` switch.
 
