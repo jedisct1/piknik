@@ -4,7 +4,6 @@ language: go
 
 os:
  - linux
- - osx
 
 go:
 - 1.6
@@ -13,15 +12,94 @@ go:
 script:
   - echo $TRAVIS_GO_VERSION
   - ./test.sh
-  - mkdir ${TRAVIS_OS_NAME}
-  - ln piknik ${TRAVIS_OS_NAME}/
-  - tar czpvf piknik-${TRAVIS_OS_NAME}_$(arch)-${TRAVIS_TAG:-dev}.tar.gz ${TRAVIS_OS_NAME}
+
+  - go clean
+  - env GOOS=windows GOARCH=386 go build
+  - mkdir win32
+  - ln piknik.exe win32/
+  - zip -9 -r piknik-win32-${TRAVIS_TAG:-dev}.zip win32
+
+  - go clean
+  - env GOOS=windows GOARCH=amd64 go build
+  - mkdir win64
+  - ln piknik.exe win64/
+  - zip -9 -r piknik-win64-${TRAVIS_TAG:-dev}.zip win64
+
+  - go clean
+  - env GOOS=openbsd GOARCH=386 go build
+  - mkdir openbsd-i386
+  - ln piknik openbsd-i386/
+  - tar czpvf piknik-openbsd_i386-${TRAVIS_TAG:-dev}.tar.gz openbsd-i386
+
+  - go clean
+  - env GOOS=openbsd GOARCH=amd64 go build
+  - mkdir openbsd-amd64
+  - ln piknik openbsd-amd64/
+  - tar czpvf piknik-openbsd_amd64-${TRAVIS_TAG:-dev}.tar.gz openbsd-amd64
+
+  - go clean
+  - env GOOS=freebsd GOARCH=386 go build
+  - mkdir freebsd-i386
+  - ln piknik freebsd-i386/
+  - tar czpvf piknik-freebsd_i386-${TRAVIS_TAG:-dev}.tar.gz freebsd-i386
+
+  - go clean
+  - env GOOS=freebsd GOARCH=amd64 go build
+  - mkdir freebsd-amd64
+  - ln piknik freebsd-amd64/
+  - tar czpvf piknik-freebsd_amd64-${TRAVIS_TAG:-dev}.tar.gz freebsd-amd64
+
+  - go clean
+  - env GOOS=dragonfly GOARCH=amd64 go build
+  - mkdir dragonflybsd-amd64
+  - ln piknik dragonflybsd-amd64/
+  - tar czpvf piknik-dragonflybsd_amd64-${TRAVIS_TAG:-dev}.tar.gz dragonflybsd-amd64
+
+  - go clean
+  - env GOOS=netbsd GOARCH=386 go build
+  - mkdir netbsd-i386
+  - ln piknik netbsd-i386/
+  - tar czpvf piknik-netbsd_i386-${TRAVIS_TAG:-dev}.tar.gz netbsd-i386
+
+  - go clean
+  - env GOOS=netbsd GOARCH=amd64 go build
+  - mkdir netbsd-amd64
+  - ln piknik netbsd-amd64/
+  - tar czpvf piknik-netbsd_amd64-${TRAVIS_TAG:-dev}.tar.gz netbsd-amd64
+
+  - go clean
+  - env GOOS=linux GOARCH=386 go build
+  - mkdir linux-i386
+  - ln piknik linux-i386/
+  - tar czpvf piknik-linux_i386-${TRAVIS_TAG:-dev}.tar.gz linux-i386
+
+  - go clean
+  - env GOOS=linux GOARCH=amd64 go build
+  - mkdir linux-x86_64
+  - ln piknik linux-x86_64/
+  - tar czpvf piknik-linux_x86_64-${TRAVIS_TAG:-dev}.tar.gz linux-x86_64
+
+  - go clean
+  - env GOOS=linux GOARCH=arm go build
+  - mkdir linux-arm
+  - ln piknik linux-arm/
+  - tar czpvf piknik-linux_arm-${TRAVIS_TAG:-dev}.tar.gz linux-arm
+
+  - go clean
+  - env GOOS=darwin GOARCH=amd64 go build
+  - mkdir macos
+  - ln piknik macos/
+  - tar czpvf piknik-macos-${TRAVIS_TAG:-dev}.tar.gz macos
+
+  - ls -l piknik-*.tar.gz piknik-*.zip
 
 deploy:
   provider: releases
   api_key:
     secure: jtXaCwUY+LlovLJQgT+V2lDYvW/dHRWHZGiZLReJP19GA1x0aAFTzRBeESbvJ92lYu5HGOL6nmFUKn8Fl+HQ8kocK2bTE16AnvBxtLIgmOElHA2W+dIiJnIl7EfG9kNxzV75eGcH/YN+Skqwq95XmTsn9TvFhIPTcY1WuoV239fqS+rcDg3zdr0uM/kcYbyO7OFkvKU4ewTx5QoDJVgLDQo2fnPtGVsPr0M8XSFpTlfpmpJzEOS30aEOE18qKZaz/suNDO4Zgya7O374xQbY6WTiChpUMTTwQRuiExj3/8soSRPWXazZrHdkX+2My6gaZEslVRdCa4CUP6tPJoIX4b5Dmi3+WkYRkeUNNqpP+m26nV9PapQqg7S5K5lXjfaCkGGZLg/wLhtjeuGdk6H1+bbyPprxdXhplBV7yzDyjNWcbFFruOcvsuks9zBYIelR9dlFiIb33gq/zsams7usZNERvisR3bBLecH9qdxcimp/DB+tEN4i8aNGz+dYmHvWBAxNw+GjGiSs6wnZrJtqex1Q2j5ngSLDgMDiSHamd0m/yQjnN5jKklIIEgIhaS+jp50Qi3mMmnv03KvLbulmLkfh/vQ612F+gH/N+UbtDeva5SPGH4I/X01gJoHGGbXVmqlv2F1cwkFnWbY50kGIaHOLQFsWxUzjyBXPVXItRxQ=
-  file: piknik-*.tar.gz
+  file:
+    - piknik-*.tar.gz
+    - piknik-*.zip
   file_glob: true
   skip_cleanup: true
   on:

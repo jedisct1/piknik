@@ -1,5 +1,5 @@
 # piknik
-Copy/paste anything over the network
+Copy/paste anything over the network ([watch a demo on Asciinema](https://asciinema.org/a/80708))
 
 ## Blurb
 Ever needed a copy/paste clipboard that works over the network?
@@ -40,14 +40,14 @@ In order to work around firewalls/NAT gatways, the clipboard content transits vi
 
 Nothing transits without end-to-end encryption; the server cannot learn much about what the clipboard actually contains.
 
-Data can be shared between different operating systems. Even Windows is kinda supported.
+Data can be shared between different operating systems, including MacOS, Linux and Windows.
 
 ## Installation
 
 ### Option 1: use precompiled binaries
 
-Precompiled binaries for OSX, Linux and OpenBSD can be downloaded here:
-https://download.pureftpd.org/piknik
+Precompiled binaries for MacOS, Linux (i386, x86_64, ARM), Win32, Win64, DragonflyBSD, NetBSD and FreeBSD can be downloaded here:
+https://github.com/jedisct1/piknik/releases/latest
 
 ### Option 2: compile the source code
 
@@ -93,7 +93,8 @@ EncryptSk = "2f530eb85e59c1977fce726df9f87345206f2a3d40bf91f9e0e9eeec2c59a3e4"
 ```
 
 Do not use these, uh? Get your very own keys with the `piknik -genkeys` command.
-And edit the `Connect` and `Listen` properties to reflect the staging server IP and port.
+Edit the `Connect` and `Listen` properties to reflect the staging server IP and port.
+And `chmod 600 ~/.piknik.toml` might not be a bad idea.
 
 Don't like the default config file location? Use the `-config` switch.
 
@@ -166,6 +167,20 @@ alias pkm='piknik -move'
 alias pkz='piknik -copy < /dev/null'
 ```
 
+## Use cases
+
+Use it to:
+
+- Securely send passwords, API keys, URLs from one host to another
+- Share a clipboard with your teammates (which can be a lot of fun)
+- Copy data from/to isolated VMs, without the VMWare tools or shared volumes (great for unsupported operating systems and malware sandboxes)
+- Copy files from/to a Windows machine, without Samba or SSH
+- Transfer data between hosts sitting behind firewalls/NAT gateways
+- Easily copy configuration files to multiple hosts
+- Start a slow download at the office, retrieve it later at home
+- Quickly backup a file to the cloud before messing with it
+- ...and more!
+
 ## Protocol
 
 Common definitions:
@@ -190,7 +205,7 @@ Copy:
 h0 := Hk,0(v || r)
 
 <- v || r' || h1
-Hh := Hk,1(v || r || h0)
+Hh := Hk,1(v || r' || h0)
 
 -> 'S' || h2 || Len(n || ct) || ekid || s || n || ct
 s := Sig(n || ct)
