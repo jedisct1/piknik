@@ -1,3 +1,6 @@
+* Version 0.6
+ - Improved error messages
+
 * Version 0.5
  - A new switch, `-password` can now follow `-genkeys` in order to
 deterministically derive the keys from a password. Not recommended,
