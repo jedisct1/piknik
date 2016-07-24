@@ -92,9 +92,13 @@ func (client *Client) pasteOperation(h1 []byte, isMove bool) {
 		log.Fatal(err)
 	}
 	rbuf := make([]byte, 112)
-	if _, err := io.ReadFull(reader, rbuf); err != nil {
+	if nbread, err := io.ReadFull(reader, rbuf); err != nil {
 		if err == io.ErrUnexpectedEOF {
-			log.Fatal("The server may be running an incompatible version")
+			if nbread < 80 {
+				log.Fatal("The clipboard might be empty")
+			} else {
+				log.Fatal("The server may be running an incompatible version")
+			}
 		} else {
 			log.Fatal(err)
 		}
