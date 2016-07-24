@@ -63,7 +63,11 @@ func (client *Client) copyOperation(h1 []byte) {
 	}
 	rbuf := make([]byte, 32)
 	if _, err = io.ReadFull(reader, rbuf); err != nil {
-		log.Fatal(err)
+		if err == io.ErrUnexpectedEOF {
+			log.Fatal("The server may be running an incompatible version")
+		} else {
+			log.Fatal(err)
+		}
 	}
 	h3 := rbuf
 	wh3 := auth3store(conf, client.version, h2)
@@ -89,7 +93,11 @@ func (client *Client) pasteOperation(h1 []byte, isMove bool) {
 	}
 	rbuf := make([]byte, 112)
 	if _, err := io.ReadFull(reader, rbuf); err != nil {
-		log.Fatal(err)
+		if err == io.ErrUnexpectedEOF {
+			log.Fatal("The server may be running an incompatible version")
+		} else {
+			log.Fatal(err)
+		}
 	}
 	h3 := rbuf[0:32]
 	ciphertextWithNonceLen := binary.LittleEndian.Uint64(rbuf[32:40])
@@ -108,7 +116,11 @@ func (client *Client) pasteOperation(h1 []byte, isMove bool) {
 	}
 	ciphertextWithNonce := make([]byte, ciphertextWithNonceLen)
 	if _, err := io.ReadFull(reader, ciphertextWithNonce); err != nil {
-		log.Fatal(err)
+		if err == io.ErrUnexpectedEOF {
+			log.Fatal("The server may be running an incompatible version")
+		} else {
+			log.Fatal(err)
+		}
 	}
 	if ed25519.Verify(conf.SignPk, ciphertextWithNonce, signature) != true {
 		log.Fatal("Signature doesn't verify")
