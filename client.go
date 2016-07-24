@@ -12,9 +12,11 @@ import (
 	"log"
 	"net"
 	"os"
+	"syscall"
 
 	"github.com/yawning/chacha20"
 	"golang.org/x/crypto/ed25519"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 // DefaultClientVersion - Default client version
@@ -68,7 +70,9 @@ func (client *Client) copyOperation(h1 []byte) {
 	if subtle.ConstantTimeCompare(wh3, h3) != 1 {
 		log.Fatal("Incorrect authentication code")
 	}
-	os.Stderr.WriteString("Sent\n")
+	if terminal.IsTerminal(int(syscall.Stderr)) {
+		os.Stderr.WriteString("Sent\n")
+	}
 }
 
 func (client *Client) pasteOperation(h1 []byte, isMove bool) {
