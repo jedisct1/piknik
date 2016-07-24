@@ -68,7 +68,7 @@ func (client *Client) copyOperation(h1 []byte) {
 	if subtle.ConstantTimeCompare(wh3, h3) != 1 {
 		log.Fatal("Incorrect authentication code")
 	}
-	fmt.Println("Sent")
+	os.Stderr.WriteString("Sent\n")
 }
 
 func (client *Client) pasteOperation(h1 []byte, isMove bool) {
