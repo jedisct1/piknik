@@ -39,7 +39,7 @@ $ tar cvf - *.txt | pkc
 $ pkp | tar xvf -
 ```
 
-In order to work around firewalls/NAT gatways, the clipboard content transits via a staging server.
+In order to work around firewalls/NAT gatways, the clipboard content transits over TCP via a staging server.
 
 Nothing transits without end-to-end encryption; the server cannot learn much about what the clipboard actually contains.
 
@@ -124,7 +124,7 @@ Run the following command on the staging server (or use `runit`, `openrc`, `syst
 $ piknik -server
 ```
 
-The staging server has to be publicly accessible. At the very least, it must be reachable by the clients.
+The staging server has to be publicly accessible. At the very least, it must be reachable by the clients over TCP with the port you specify in the configuration.
 
 Commands without a valid API key (present in the client configuration file) will be rejected by the server.
 
