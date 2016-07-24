@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/binary"
-	"fmt"
 	"io"
 	"log"
 	"net"
@@ -91,7 +90,7 @@ func (cnx *ClientConnection) storeOperation(h1 []byte) {
 	h2 := rbuf[0:32]
 	ciphertextWithNonceLen := binary.LittleEndian.Uint64(rbuf[32:40])
 	if conf.MaxLen > 0 && ciphertextWithNonceLen > conf.MaxLen {
-		fmt.Printf("%v bytes requested to be stored, but limit set to %v bytes (%v Mb)\n",
+		log.Printf("%v bytes requested to be stored, but limit set to %v bytes (%v Mb)\n",
 			ciphertextWithNonceLen, conf.MaxLen, conf.MaxLen/(1024*1024))
 		return
 	}
