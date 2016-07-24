@@ -166,6 +166,10 @@ func main() {
 	if *isServer {
 		RunServer(conf)
 	} else {
+		if len(conf.EncryptSk) != 32 || len(conf.SignSk) != 64 {
+			log.Fatal("The EncryptSk and SignSk properties must be present in the configuration file\n" +
+				"in order to use this command in client mode")
+		}
 		RunClient(conf, *isCopy, *isMove)
 	}
 }
