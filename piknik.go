@@ -62,6 +62,8 @@ func version() {
 }
 
 func main() {
+	log.SetFlags(0)
+
 	isCopy := flag.Bool("copy", false, "store content (copy)")
 	_ = flag.Bool("paste", false, "retrieve the content (paste) - this is the default action")
 	isMove := flag.Bool("move", false, "retrieve and delete the clipboard content")
