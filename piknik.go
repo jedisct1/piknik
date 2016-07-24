@@ -61,6 +61,31 @@ func version() {
 		Version, DefaultClientVersion)
 }
 
+func confCheck(conf Conf, isServer bool) {
+	if len(conf.Psk) != 32 {
+		log.Fatal("Configuration error: the Psk property is either missing or invalid")
+	}
+	if len(conf.SignPk) != 32 {
+		log.Fatal("Configuration error: the SignPk property is either missing or invalid")
+	}
+	if isServer {
+		if len(conf.Listen) < 3 {
+			log.Fatal("Configuration error: the Listen property must be valid for a server")
+		}
+		if conf.MaxClients <= 0 {
+			log.Fatal("Configuration error: MaxClients should be at least 1")
+		}
+	} else {
+		if len(conf.Connect) < 3 {
+			log.Fatal("Configuration error: the Connect property must be valid for a client")
+		}
+		if len(conf.EncryptSk) != 32 || len(conf.SignSk) != 64 {
+			log.Fatal("Configuration error: the EncryptSk and SignSk properties must be present\n" +
+				"and valid in order to use this command in client mode")
+		}
+	}
+}
+
 func main() {
 	log.SetFlags(0)
 
@@ -163,13 +188,10 @@ func main() {
 	}
 	conf.MaxClients = *maxClients
 	conf.MaxLen = *maxLenMb * 1024 * 1024
+	confCheck(conf, *isServer)
 	if *isServer {
 		RunServer(conf)
 	} else {
-		if len(conf.EncryptSk) != 32 || len(conf.SignSk) != 64 {
-			log.Fatal("The EncryptSk and SignSk properties must be present in the configuration file\n" +
-				"in order to use this command in client mode")
-		}
 		RunClient(conf, *isCopy, *isMove)
 	}
 }
