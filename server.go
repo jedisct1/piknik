@@ -18,6 +18,7 @@ import (
 // ClientConnection - A client connection
 type ClientConnection struct {
 	conf          Conf
+	conn          net.Conn
 	reader        *bufio.Reader
 	writer        *bufio.Writer
 	clientVersion byte
@@ -68,6 +69,7 @@ func (cnx *ClientConnection) getOperation(h1 []byte, isMove bool) {
 		storedContentRWMutex.RUnlock()
 	}
 
+	cnx.conn.SetDeadline(time.Now().Add(conf.DataTimeout))
 	h3 := auth3get(conf, cnx.clientVersion, h2, encryptSkID, signature)
 	writer.Write(h3)
 	ciphertextWithNonceLen := uint64(len(ciphertextWithNonce))
@@ -105,6 +107,7 @@ func (cnx *ClientConnection) storeOperation(h1 []byte) {
 	}
 	ciphertextWithNonce := make([]byte, ciphertextWithNonceLen)
 
+	cnx.conn.SetDeadline(time.Now().Add(conf.DataTimeout))
 	if _, err := io.ReadFull(reader, ciphertextWithNonce); err != nil {
 		log.Print(err)
 		return
@@ -132,6 +135,7 @@ func handleClientConnection(conf Conf, conn net.Conn) {
 	reader, writer := bufio.NewReader(conn), bufio.NewWriter(conn)
 	cnx := ClientConnection{
 		conf:   conf,
+		conn:   conn,
 		reader: reader,
 		writer: writer,
 	}
