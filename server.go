@@ -169,6 +169,8 @@ func handleClientConnection(conf Conf, conn net.Conn) {
 		log.Print(err)
 		return
 	}
+	remoteIP := cnx.conn.RemoteAddr().(*net.TCPAddr).IP
+	addToTrustedIPs(conf, remoteIP)
 	opcode, err := reader.ReadByte()
 	if err != nil {
 		return
@@ -183,10 +185,42 @@ func handleClientConnection(conf Conf, conn net.Conn) {
 	}
 }
 
+var trustedClientIPs []net.IP
+var trustedClientIPsRWMutex sync.RWMutex
+
+func addToTrustedIPs(conf Conf, ip net.IP) {
+	trustedClientIPsRWMutex.Lock()
+	if uint64(len(trustedClientIPs)) >= conf.TrustedIPCount {
+		trustedClientIPs = append(trustedClientIPs[1:], ip)
+	} else {
+		trustedClientIPs = append(trustedClientIPs, ip)
+	}
+	trustedClientIPsRWMutex.Unlock()
+}
+
+func isIPTrusted(conf Conf, ip net.IP) bool {
+	trustedClientIPsRWMutex.RLock()
+	defer trustedClientIPsRWMutex.RUnlock()
+	if len(trustedClientIPs) == 0 {
+		return true
+	}
+	for _, foundIP := range trustedClientIPs {
+		if foundIP.Equal(ip) {
+			return true
+		}
+	}
+	return false
+}
+
 func acceptClient(conf Conf, conn net.Conn) {
 	conn.SetDeadline(time.Now().Add(conf.Timeout))
+	remoteIP := conn.RemoteAddr().(*net.TCPAddr).IP
 	for {
 		count := atomic.LoadUint64(&clientsCount)
+		if count >= conf.MaxClients-conf.TrustedIPCount && isIPTrusted(conf, remoteIP) == false {
+			conn.Close()
+			return
+		}
 		if count >= conf.MaxClients {
 			conn.Close()
 			return

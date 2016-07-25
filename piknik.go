@@ -40,17 +40,18 @@ type tomlConfig struct {
 
 // Conf - Shared config
 type Conf struct {
-	Connect     string
-	Listen      string
-	MaxClients  uint64
-	MaxLen      uint64
-	EncryptSk   []byte
-	EncryptSkID []byte
-	Psk         []byte
-	SignPk      []byte
-	SignSk      []byte
-	Timeout     time.Duration
-	DataTimeout time.Duration
+	Connect        string
+	Listen         string
+	MaxClients     uint64
+	MaxLen         uint64
+	EncryptSk      []byte
+	EncryptSkID    []byte
+	Psk            []byte
+	SignPk         []byte
+	SignSk         []byte
+	Timeout        time.Duration
+	DataTimeout    time.Duration
+	TrustedIPCount uint64
 }
 
 func expandConfigFile(path string) string {
@@ -197,6 +198,10 @@ func main() {
 	conf.MaxLen = *maxLenMb * 1024 * 1024
 	conf.Timeout = time.Duration(*timeout) * time.Second
 	conf.DataTimeout = time.Duration(*dataTimeout) * time.Second
+	conf.TrustedIPCount = uint64(float64(conf.MaxClients) * 0.1)
+	if conf.TrustedIPCount < 1 {
+		conf.TrustedIPCount = 1
+	}
 	confCheck(conf, *isServer)
 	if *isServer {
 		RunServer(conf)
