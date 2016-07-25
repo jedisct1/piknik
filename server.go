@@ -10,6 +10,7 @@ import (
 	"net"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"golang.org/x/crypto/ed25519"
 )
@@ -179,6 +180,7 @@ func handleClientConnection(conf Conf, conn net.Conn) {
 }
 
 func acceptClient(conf Conf, conn net.Conn) {
+	conn.SetDeadline(time.Now().Add(conf.Timeout))
 	for {
 		count := atomic.LoadUint64(&clientsCount)
 		if count >= conf.MaxClients {

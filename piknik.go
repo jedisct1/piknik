@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"runtime"
+	"time"
 
 	"github.com/BurntSushi/toml"
 	blake2b "github.com/minio/blake2b-simd"
@@ -33,6 +34,7 @@ type tomlConfig struct {
 	Psk         string
 	SignPk      string
 	SignSk      string
+	Timeout     uint
 }
 
 // Conf - Shared config
@@ -46,6 +48,7 @@ type Conf struct {
 	Psk         []byte
 	SignPk      []byte
 	SignSk      []byte
+	Timeout     time.Duration
 }
 
 func expandConfigFile(path string) string {
@@ -97,6 +100,7 @@ func main() {
 	isDeterministic := flag.Bool("password", false, "derive the keys from a password (default=random keys)")
 	maxClients := flag.Uint64("maxclients", 10, "maximum number of simultaneous client connections")
 	maxLenMb := flag.Uint64("maxlen", 0, "maximum content length to accept in Mb (0=unlimited)")
+	timeout := flag.Uint("timeout", 10, "connection timeout (seconds)")
 	isVersion := flag.Bool("version", false, "display package version")
 
 	defaultConfigFile := "~/.piknik.toml"
@@ -188,6 +192,7 @@ func main() {
 	}
 	conf.MaxClients = *maxClients
 	conf.MaxLen = *maxLenMb * 1024 * 1024
+	conf.Timeout = time.Duration(*timeout) * time.Second
 	confCheck(conf, *isServer)
 	if *isServer {
 		RunServer(conf)
