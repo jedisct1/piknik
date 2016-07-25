@@ -1,3 +1,11 @@
+* Version 0.7
+ - The number of simultaneous connections to a Piknik server can now
+be controlled with the `-maxclients` command-line flag. When more than
+90% of the available slots are filled, new sessions can only be open by
+client IPs having recently completed a successful handshake.
+ - New command-line flags: `-timeout` and `-datatimeout` in order to
+enforce deadlines for handshakes and data transfers.
+
 * Version 0.6
  - Improved error messages
 
