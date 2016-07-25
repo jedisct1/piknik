@@ -13,6 +13,7 @@ import (
 	"net"
 	"os"
 	"syscall"
+	"time"
 
 	"github.com/yawning/chacha20"
 	"golang.org/x/crypto/ed25519"
@@ -25,6 +26,7 @@ const DefaultClientVersion = byte(4)
 // Client - Client data
 type Client struct {
 	conf    Conf
+	conn    net.Conn
 	reader  *bufio.Reader
 	writer  *bufio.Writer
 	version byte
@@ -50,6 +52,8 @@ func (client *Client) copyOperation(h1 []byte) {
 	ciphertext := ciphertextWithNonce[24:]
 	cipher.XORKeyStream(ciphertext, content)
 	signature := ed25519.Sign(conf.SignSk, ciphertextWithNonce)
+
+	client.conn.SetDeadline(time.Now().Add(conf.DataTimeout))
 	h2 := auth2store(conf, client.version, h1, opcode, conf.EncryptSkID, signature)
 	writer.WriteByte(opcode)
 	writer.Write(h2)
@@ -119,6 +123,8 @@ func (client *Client) pasteOperation(h1 []byte, isMove bool) {
 			wEncryptSkIDStr, encryptSkIDStr))
 	}
 	ciphertextWithNonce := make([]byte, ciphertextWithNonceLen)
+
+	client.conn.SetDeadline(time.Now().Add(conf.DataTimeout))
 	if _, err := io.ReadFull(reader, ciphertextWithNonce); err != nil {
 		if err == io.ErrUnexpectedEOF {
 			log.Fatal("The server may be running an incompatible version")
@@ -142,15 +148,18 @@ func (client *Client) pasteOperation(h1 []byte, isMove bool) {
 
 // RunClient - Process a client query
 func RunClient(conf Conf, isCopy bool, isMove bool) {
-	conn, err := net.Dial("tcp", conf.Connect)
+	conn, err := net.DialTimeout("tcp", conf.Connect, conf.Timeout)
 	if err != nil {
 		log.Fatal(fmt.Sprintf("Unable to connect to %v - Is a Piknik server running on that host?",
 			conf.Connect))
 	}
 	defer conn.Close()
+
+	conn.SetDeadline(time.Now().Add(conf.Timeout))
 	reader, writer := bufio.NewReader(conn), bufio.NewWriter(conn)
 	client := Client{
 		conf:    conf,
+		conn:    conn,
 		reader:  reader,
 		writer:  writer,
 		version: DefaultClientVersion,
