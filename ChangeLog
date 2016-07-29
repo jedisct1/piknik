@@ -1,3 +1,9 @@
+* Version 0.8
+ - The clipboard now includes a timestamp, so that clients can reject
+content that is too old. By default, the maximum age is 7 days. This
+can be adjusted with a "TTL" property in the configuration file. The
+duration is expressed in seconds.
+
 * Version 0.7
  - The number of simultaneous connections to a Piknik server can now
 be controlled with the `-maxclients` command-line flag. When more than
