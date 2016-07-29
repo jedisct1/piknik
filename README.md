@@ -213,8 +213,9 @@ Len(x): x encoded as a 64-bit little endian unsigned integer
 n: random 192-bit nonce
 r: random 256-bit client nonce
 r': random 256-bit server nonce
+ts: Unix timestamp as a 64-bit little endian integer
 Sig: Ed25519
-v: 4
+v: 5
 ```
 
 Copy:
@@ -225,7 +226,7 @@ h0 := Hk,0(v || r)
 <- v || r' || h1
 Hh := Hk,1(v || r' || h0)
 
--> 'S' || h2 || Len(n || ct) || ekid || s || n || ct
+-> 'S' || h2 || Len(n || ct) || ekid || ts || s || n || ct
 s := Sig(n || ct)
 h2 := Hk,2(h1 || 'S' || ekid || s)
 
@@ -246,7 +247,7 @@ h1 := Hk,1(v || r' || H0)
 -> opcode || h2
 h2 := Hk,2(h1 || opcode)
 
-<- Hk,3(h2 || ekid || s) || Len(n || ct) || ekid || s || n || ct
+<- Hk,3(h2 || ekid || s) || Len(n || ct) || ekid || ts || s || n || ct
 s := Sig(n || ct)
 ```
 
