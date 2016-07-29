@@ -24,6 +24,8 @@ const (
 	DefaultListen = "0.0.0.0:8075"
 	// DefaultConnect - Default value for the Connect parameter
 	DefaultConnect = "127.0.0.1:8075"
+	// DefaultTTL - Time after the clipboard is considered obsolete, in seconds
+	DefaultTTL = 7 * 24 * time.Hour
 )
 
 type tomlConfig struct {
@@ -36,6 +38,7 @@ type tomlConfig struct {
 	SignSk      string
 	Timeout     uint
 	DataTimeout uint
+	TTL         uint
 }
 
 // Conf - Shared config
@@ -51,6 +54,7 @@ type Conf struct {
 	SignSk         []byte
 	Timeout        time.Duration
 	DataTimeout    time.Duration
+	TTL            time.Duration
 	TrustedIPCount uint64
 }
 
@@ -88,6 +92,9 @@ func confCheck(conf Conf, isServer bool) {
 		if len(conf.EncryptSk) != 32 || len(conf.SignSk) != 64 {
 			log.Fatal("Configuration error: the EncryptSk and SignSk properties must be present\n" +
 				"and valid in order to use this command in client mode")
+		}
+		if conf.TTL <= 0 {
+			log.Fatal("TTL cannot be 0")
 		}
 	}
 }
@@ -176,6 +183,10 @@ func main() {
 		encryptSkID := hf.Sum(nil)
 		encryptSkID[7] &= 0x7f
 		conf.EncryptSkID = encryptSkID
+	}
+	conf.TTL = DefaultTTL
+	if ttl := tomlConf.TTL; ttl > 0 {
+		conf.TTL = time.Duration(ttl) * time.Second
 	}
 	if signSkHex := tomlConf.SignSk; signSkHex != "" {
 		signSk, err := hex.DecodeString(signSkHex)

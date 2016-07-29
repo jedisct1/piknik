@@ -50,7 +50,7 @@ func auth2get(conf Conf, clientVersion byte, h1 []byte, opcode byte) []byte {
 }
 
 func auth2store(conf Conf, clientVersion byte, h1 []byte, opcode byte,
-	encryptSkID []byte, signature []byte) []byte {
+	encryptSkID []byte, ts []byte, signature []byte) []byte {
 	hf2, _ := blake2b.New(&blake2b.Config{
 		Key:    conf.Psk,
 		Person: []byte(DomainStr),
@@ -60,6 +60,9 @@ func auth2store(conf Conf, clientVersion byte, h1 []byte, opcode byte,
 	hf2.Write(h1)
 	hf2.Write([]byte{opcode})
 	hf2.Write(encryptSkID)
+	if clientVersion >= 5 {
+		hf2.Write(ts)
+	}
 	hf2.Write(signature)
 	h2 := hf2.Sum(nil)
 
@@ -67,7 +70,7 @@ func auth2store(conf Conf, clientVersion byte, h1 []byte, opcode byte,
 }
 
 func auth3get(conf Conf, clientVersion byte, h2 []byte, encryptSkID []byte,
-	signature []byte) []byte {
+	ts []byte, signature []byte) []byte {
 	hf3, _ := blake2b.New(&blake2b.Config{
 		Key:    conf.Psk,
 		Person: []byte(DomainStr),
@@ -76,6 +79,9 @@ func auth3get(conf Conf, clientVersion byte, h2 []byte, encryptSkID []byte,
 	})
 	hf3.Write(h2)
 	hf3.Write(encryptSkID)
+	if clientVersion >= 5 {
+		hf3.Write(ts)
+	}
 	hf3.Write(signature)
 	h3 := hf3.Sum(nil)
 

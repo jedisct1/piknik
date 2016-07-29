@@ -21,7 +21,7 @@ import (
 )
 
 // DefaultClientVersion - Default client version
-const DefaultClientVersion = byte(4)
+const DefaultClientVersion = byte(5)
 
 // Client - Client data
 type Client struct {
@@ -42,6 +42,8 @@ func (client *Client) copyOperation(h1 []byte) {
 	if _, err = rand.Read(nonce); err != nil {
 		log.Fatal(err)
 	}
+	ts := make([]byte, 8)
+	binary.LittleEndian.PutUint64(ts, uint64(time.Now().Unix()))
 	cipher, err := chacha20.NewCipher(conf.EncryptSk, nonce)
 	if err != nil {
 		log.Fatal(err)
@@ -54,12 +56,13 @@ func (client *Client) copyOperation(h1 []byte) {
 	signature := ed25519.Sign(conf.SignSk, ciphertextWithNonce)
 
 	client.conn.SetDeadline(time.Now().Add(conf.DataTimeout))
-	h2 := auth2store(conf, client.version, h1, opcode, conf.EncryptSkID, signature)
+	h2 := auth2store(conf, client.version, h1, opcode, conf.EncryptSkID, ts, signature)
 	writer.WriteByte(opcode)
 	writer.Write(h2)
 	ciphertextWithNonceLen := uint64(len(ciphertextWithNonce))
 	binary.Write(writer, binary.LittleEndian, ciphertextWithNonceLen)
 	writer.Write(conf.EncryptSkID)
+	writer.Write(ts)
 	writer.Write(signature)
 	writer.Write(ciphertextWithNonce)
 	if err := writer.Flush(); err != nil {
@@ -95,7 +98,7 @@ func (client *Client) pasteOperation(h1 []byte, isMove bool) {
 	if err := writer.Flush(); err != nil {
 		log.Fatal(err)
 	}
-	rbuf := make([]byte, 112)
+	rbuf := make([]byte, 120)
 	if nbread, err := io.ReadFull(reader, rbuf); err != nil {
 		if err == io.ErrUnexpectedEOF {
 			if nbread < 80 {
@@ -110,11 +113,15 @@ func (client *Client) pasteOperation(h1 []byte, isMove bool) {
 	h3 := rbuf[0:32]
 	ciphertextWithNonceLen := binary.LittleEndian.Uint64(rbuf[32:40])
 	encryptSkID := rbuf[40:48]
-	_ = encryptSkID
-	signature := rbuf[48:112]
-	wh3 := auth3get(conf, client.version, h2, encryptSkID, signature)
+	ts := rbuf[48:56]
+	signature := rbuf[56:120]
+	wh3 := auth3get(conf, client.version, h2, encryptSkID, ts, signature)
 	if subtle.ConstantTimeCompare(wh3, h3) != 1 {
 		log.Fatal("Incorrect authentication code")
+	}
+	elapsed := time.Since(time.Unix(int64(binary.LittleEndian.Uint64(ts)), 0))
+	if elapsed >= conf.TTL {
+		log.Fatal("Clipboard content is too old")
 	}
 	if bytes.Equal(conf.EncryptSkID, encryptSkID) == false {
 		wEncryptSkIDStr := binary.LittleEndian.Uint64(conf.EncryptSkID)

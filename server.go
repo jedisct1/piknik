@@ -27,6 +27,7 @@ type ClientConnection struct {
 // StoredContent - Paste buffer
 type StoredContent struct {
 	encryptSkID         []byte
+	ts                  []byte
 	signature           []byte
 	ciphertextWithNonce []byte
 }
@@ -52,29 +53,32 @@ func (cnx *ClientConnection) getOperation(h1 []byte, isMove bool) {
 		return
 	}
 
-	var encryptSkID, signature, ciphertextWithNonce []byte
+	var encryptSkID, ts, signature, ciphertextWithNonce []byte
 	if isMove {
 		storedContentRWMutex.Lock()
-		encryptSkID, signature, ciphertextWithNonce =
-			storedContent.encryptSkID, storedContent.signature,
-			storedContent.ciphertextWithNonce
-		storedContent.encryptSkID, storedContent.signature,
-			storedContent.ciphertextWithNonce = nil, nil, nil
+		encryptSkID, ts, signature, ciphertextWithNonce =
+			storedContent.encryptSkID, storedContent.ts,
+			storedContent.signature, storedContent.ciphertextWithNonce
+		storedContent.encryptSkID, storedContent.ts, storedContent.signature,
+			storedContent.ciphertextWithNonce = nil, nil, nil, nil
 		storedContentRWMutex.Unlock()
 	} else {
 		storedContentRWMutex.RLock()
-		encryptSkID, signature, ciphertextWithNonce =
-			storedContent.encryptSkID, storedContent.signature,
+		encryptSkID, ts, signature, ciphertextWithNonce =
+			storedContent.encryptSkID, storedContent.ts, storedContent.signature,
 			storedContent.ciphertextWithNonce
 		storedContentRWMutex.RUnlock()
 	}
 
 	cnx.conn.SetDeadline(time.Now().Add(conf.DataTimeout))
-	h3 := auth3get(conf, cnx.clientVersion, h2, encryptSkID, signature)
+	h3 := auth3get(conf, cnx.clientVersion, h2, encryptSkID, ts, signature)
 	writer.Write(h3)
 	ciphertextWithNonceLen := uint64(len(ciphertextWithNonce))
 	binary.Write(writer, binary.LittleEndian, ciphertextWithNonceLen)
 	writer.Write(encryptSkID)
+	if cnx.clientVersion >= 5 {
+		writer.Write(ts)
+	}
 	writer.Write(signature)
 	writer.Write(ciphertextWithNonce)
 	if err := writer.Flush(); err != nil {
@@ -85,7 +89,7 @@ func (cnx *ClientConnection) getOperation(h1 []byte, isMove bool) {
 
 func (cnx *ClientConnection) storeOperation(h1 []byte) {
 	conf, reader, writer := cnx.conf, cnx.reader, cnx.writer
-	rbuf := make([]byte, 112)
+	rbuf := make([]byte, 120)
 	if _, err := io.ReadFull(reader, rbuf); err != nil {
 		log.Print(err)
 		return
@@ -98,10 +102,11 @@ func (cnx *ClientConnection) storeOperation(h1 []byte) {
 		return
 	}
 	encryptSkID := rbuf[40:48]
-	signature := rbuf[48:112]
+	ts := rbuf[48:56]
+	signature := rbuf[56:120]
 	opcode := byte('S')
 
-	wh2 := auth2store(conf, cnx.clientVersion, h1, opcode, encryptSkID, signature)
+	wh2 := auth2store(conf, cnx.clientVersion, h1, opcode, encryptSkID, ts, signature)
 	if subtle.ConstantTimeCompare(wh2, h2) != 1 {
 		return
 	}
@@ -119,6 +124,7 @@ func (cnx *ClientConnection) storeOperation(h1 []byte) {
 
 	storedContentRWMutex.Lock()
 	storedContent.encryptSkID = encryptSkID
+	storedContent.ts = ts
 	storedContent.signature = signature
 	storedContent.ciphertextWithNonce = ciphertextWithNonce
 	storedContentRWMutex.Unlock()
@@ -145,7 +151,7 @@ func handleClientConnection(conf Conf, conn net.Conn) {
 		return
 	}
 	cnx.clientVersion = rbuf[0]
-	if cnx.clientVersion < 2 || cnx.clientVersion > 4 {
+	if cnx.clientVersion < 2 || cnx.clientVersion > 5 {
 		log.Print("Unsupported client version - Please run the same version on the server and on the client")
 		return
 	}
