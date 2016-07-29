@@ -185,7 +185,7 @@ func RunClient(conf Conf, isCopy bool, isMove bool) {
 	rbuf := make([]byte, 65)
 	if nbread, err := io.ReadFull(reader, rbuf); err != nil {
 		if nbread < 2 {
-			log.Fatal("The server rejected the connection - Please retry later")
+			log.Fatal("The server rejected the connection - Check that it is running the same Piknik version, or retry later")
 		} else {
 			log.Fatal("The server doesn't support this protocol")
 		}
