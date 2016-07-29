@@ -214,7 +214,7 @@ n: random 192-bit nonce
 r: random 256-bit client nonce
 r': random 256-bit server nonce
 Sig: Ed25519
-v: 3
+v: 4
 ```
 
 Copy:
