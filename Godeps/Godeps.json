@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/jedisct1/piknik",
-	"GoVersion": "go1.6.3",
+	"GoVersion": "go1.6",
 	"GodepVersion": "v74",
 	"Deps": [
 		{
@@ -26,6 +26,18 @@
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/ed25519/internal/edwards25519",
+			"Rev": "bc89c496413265e715159bdc8478ee9a92fdc265"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/pbkdf2",
+			"Rev": "bc89c496413265e715159bdc8478ee9a92fdc265"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/scrypt",
+			"Rev": "bc89c496413265e715159bdc8478ee9a92fdc265"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/ssh/terminal",
 			"Rev": "bc89c496413265e715159bdc8478ee9a92fdc265"
 		}
 	]
