@@ -1,3 +1,9 @@
+* Version 0.9
+ - Support for protocol version 3 (Piknik <= 0.2) was removed from the server.
+ Please upgrade the clients running these old versions.
+ - Compatibility with protocol version 4 (Piknik >= 0.3 and <= 0.7) was
+ restored.
+
 * Version 0.8
  - The clipboard now includes a timestamp, so that clients can reject
 content that is too old. By default, the maximum age is 7 days. This
@@ -42,5 +48,3 @@ the server and to the clients.
 
 * Version 0.1
  - Initial public release.
-
-
