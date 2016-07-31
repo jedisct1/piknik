@@ -89,7 +89,12 @@ func (cnx *ClientConnection) getOperation(h1 []byte, isMove bool) {
 
 func (cnx *ClientConnection) storeOperation(h1 []byte) {
 	conf, reader, writer := cnx.conf, cnx.reader, cnx.writer
-	rbuf := make([]byte, 120)
+	var rbuf []byte
+	if cnx.clientVersion < 5 {
+		rbuf = make([]byte, 112)
+	} else {
+		rbuf = make([]byte, 120)
+	}
 	if _, err := io.ReadFull(reader, rbuf); err != nil {
 		log.Print(err)
 		return
@@ -102,8 +107,15 @@ func (cnx *ClientConnection) storeOperation(h1 []byte) {
 		return
 	}
 	encryptSkID := rbuf[40:48]
-	ts := rbuf[48:56]
-	signature := rbuf[56:120]
+	var ts, signature []byte
+	if cnx.clientVersion < 5 {
+		ts = make([]byte, 8)
+		binary.LittleEndian.PutUint64(ts, uint64(time.Now().Unix()))
+		signature = rbuf[48:112]
+	} else {
+		ts = rbuf[48:56]
+		signature = rbuf[56:120]
+	}
 	opcode := byte('S')
 
 	wh2 := auth2store(conf, cnx.clientVersion, h1, opcode, encryptSkID, ts, signature)
