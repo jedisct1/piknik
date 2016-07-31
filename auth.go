@@ -24,9 +24,7 @@ func auth1(conf Conf, clientVersion byte, h0 []byte, r2 []byte) []byte {
 		Salt:   []byte{1},
 	})
 	hf1.Write([]byte{clientVersion})
-	if clientVersion > 3 {
-		hf1.Write(r2)
-	}
+	hf1.Write(r2)
 	hf1.Write(h0)
 	h1 := hf1.Sum(nil)
 
@@ -41,9 +39,7 @@ func auth2get(conf Conf, clientVersion byte, h1 []byte, opcode byte) []byte {
 		Salt:   []byte{2},
 	})
 	hf2.Write(h1)
-	if clientVersion > 2 {
-		hf2.Write([]byte{opcode})
-	}
+	hf2.Write([]byte{opcode})
 	h2 := hf2.Sum(nil)
 
 	return h2

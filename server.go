@@ -151,7 +151,7 @@ func handleClientConnection(conf Conf, conn net.Conn) {
 		return
 	}
 	cnx.clientVersion = rbuf[0]
-	if cnx.clientVersion < 2 || cnx.clientVersion > 5 {
+	if cnx.clientVersion < 4 || cnx.clientVersion > 5 {
 		log.Print("Unsupported client version - Please run the same version on the server and on the client")
 		return
 	}
@@ -167,9 +167,7 @@ func handleClientConnection(conf Conf, conn net.Conn) {
 	}
 	h1 := auth1(conf, cnx.clientVersion, h0, r2)
 	writer.Write([]byte{cnx.clientVersion})
-	if cnx.clientVersion > 3 {
-		writer.Write(r2)
-	}
+	writer.Write(r2)
 	writer.Write(h1)
 	if err := writer.Flush(); err != nil {
 		log.Print(err)
