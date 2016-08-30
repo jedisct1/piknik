@@ -259,4 +259,4 @@ s := Sig(n || ct)
 
 ## Credits
 
-Piknik diagram by [EasyPi](https://easypi.herokuapp.com/copy-paste-anything-over-network/)
+Piknik diagram by [EasyPi](https://easypi.herokuapp.com/copy-paste-anything-over-network/).
