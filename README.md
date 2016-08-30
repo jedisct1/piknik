@@ -1,9 +1,9 @@
 [![Latest release](https://img.shields.io/github/release/jedisct1/piknik.svg)](https://github.com/jedisct1/piknik/releases/latest)
 [![Build status](https://travis-ci.org/jedisct1/piknik.svg?branch=master)](https://travis-ci.org/jedisct1/piknik?branch=master)
 
-![Piknik](https://raw.github.com/jedisct1/piknik/master/piknik.png)
-=========
+# Piknik
 Copy/paste anything over the network ([watch a demo on Asciinema](https://asciinema.org/a/80708))
+![Piknik](https://raw.github.com/jedisct1/piknik/master/piknik.png)
 
 ## Blurb
 Ever needed a copy/paste clipboard that works over the network?
