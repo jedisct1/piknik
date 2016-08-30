@@ -1,7 +1,8 @@
 [![Latest release](https://img.shields.io/github/release/jedisct1/piknik.svg)](https://github.com/jedisct1/piknik/releases/latest)
 [![Build status](https://travis-ci.org/jedisct1/piknik.svg?branch=master)](https://travis-ci.org/jedisct1/piknik?branch=master)
 
-# piknik
+![Piknik](https://raw.github.com/jedisct1/piknik/master/piknik.png)
+=========
 Copy/paste anything over the network ([watch a demo on Asciinema](https://asciinema.org/a/80708))
 
 ## Blurb
@@ -254,3 +255,7 @@ s := Sig(n || ct)
 ## License
 
 [ISC](https://en.wikipedia.org/wiki/ISC_license).
+
+## Credits
+
+Piknik diagram by [EasyPi](https://easypi.herokuapp.com/copy-paste-anything-over-network/)
