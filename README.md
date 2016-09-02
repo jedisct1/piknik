@@ -2,11 +2,10 @@
 [![Build status](https://travis-ci.org/jedisct1/piknik.svg?branch=master)](https://travis-ci.org/jedisct1/piknik?branch=master)
 
 # Piknik
-Copy/paste anything over the network ([watch a demo on Asciinema](https://asciinema.org/a/80708))
+Copy/paste anything over the network ([watch a demo on Asciinema](https://asciinema.org/a/80708) - [download the source code / binaries](https://github.com/jedisct1/piknik/releases/latest))
 
 ![Piknik](https://raw.github.com/jedisct1/piknik/master/piknik.png)
 
-## Blurb
 Ever needed a copy/paste clipboard that works over the network?
 
 Piknik seamlessly and securely transfers URLs, code snippets, documents, virtually anything between arbitrary hosts.
