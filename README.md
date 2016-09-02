@@ -3,7 +3,9 @@
 
 # Piknik
 Copy/paste anything over the network!
-[watch a demo on Asciinema](https://asciinema.org/a/80708) - [download the source code / binaries](https://github.com/jedisct1/piknik/releases/latest))
+
+[[watch a demo on Asciinema](https://asciinema.org/a/80708)] -
+[[download the source code / binaries](https://github.com/jedisct1/piknik/releases/latest)]
 
 ![Piknik](https://raw.github.com/jedisct1/piknik/master/piknik.png)
 
