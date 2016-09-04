@@ -26,6 +26,8 @@ type ClientConnection struct {
 
 // StoredContent - Paste buffer
 type StoredContent struct {
+	sync.RWMutex
+
 	encryptSkID         []byte
 	ts                  []byte
 	signature           []byte
@@ -33,7 +35,7 @@ type StoredContent struct {
 }
 
 var storedContent StoredContent
-var storedContentRWMutex sync.RWMutex
+var trustedClients TrustedClients
 var clientsCount = uint64(0)
 
 func (cnx *ClientConnection) getOperation(h1 []byte, isMove bool) {
@@ -55,19 +57,19 @@ func (cnx *ClientConnection) getOperation(h1 []byte, isMove bool) {
 
 	var encryptSkID, ts, signature, ciphertextWithNonce []byte
 	if isMove {
-		storedContentRWMutex.Lock()
+		storedContent.Lock()
 		encryptSkID, ts, signature, ciphertextWithNonce =
 			storedContent.encryptSkID, storedContent.ts,
 			storedContent.signature, storedContent.ciphertextWithNonce
 		storedContent.encryptSkID, storedContent.ts, storedContent.signature,
 			storedContent.ciphertextWithNonce = nil, nil, nil, nil
-		storedContentRWMutex.Unlock()
+		storedContent.Unlock()
 	} else {
-		storedContentRWMutex.RLock()
+		storedContent.RLock()
 		encryptSkID, ts, signature, ciphertextWithNonce =
 			storedContent.encryptSkID, storedContent.ts, storedContent.signature,
 			storedContent.ciphertextWithNonce
-		storedContentRWMutex.RUnlock()
+		storedContent.RUnlock()
 	}
 
 	cnx.conn.SetDeadline(time.Now().Add(conf.DataTimeout))
@@ -134,12 +136,12 @@ func (cnx *ClientConnection) storeOperation(h1 []byte) {
 	}
 	h3 := auth3store(conf, cnx.clientVersion, h2)
 
-	storedContentRWMutex.Lock()
+	storedContent.Lock()
 	storedContent.encryptSkID = encryptSkID
 	storedContent.ts = ts
 	storedContent.signature = signature
 	storedContent.ciphertextWithNonce = ciphertextWithNonce
-	storedContentRWMutex.Unlock()
+	storedContent.Unlock()
 
 	writer.Write(h3)
 	if err := writer.Flush(); err != nil {
@@ -201,26 +203,29 @@ func handleClientConnection(conf Conf, conn net.Conn) {
 	}
 }
 
-var trustedClientIPs []net.IP
-var trustedClientIPsRWMutex sync.RWMutex
+type TrustedClients struct {
+	sync.RWMutex
+
+	ips []net.IP
+}
 
 func addToTrustedIPs(conf Conf, ip net.IP) {
-	trustedClientIPsRWMutex.Lock()
-	if uint64(len(trustedClientIPs)) >= conf.TrustedIPCount {
-		trustedClientIPs = append(trustedClientIPs[1:], ip)
+	trustedClients.Lock()
+	if uint64(len(trustedClients.ips)) >= conf.TrustedIPCount {
+		trustedClients.ips = append(trustedClients.ips[1:], ip)
 	} else {
-		trustedClientIPs = append(trustedClientIPs, ip)
+		trustedClients.ips = append(trustedClients.ips, ip)
 	}
-	trustedClientIPsRWMutex.Unlock()
+	trustedClients.Unlock()
 }
 
 func isIPTrusted(conf Conf, ip net.IP) bool {
-	trustedClientIPsRWMutex.RLock()
-	defer trustedClientIPsRWMutex.RUnlock()
-	if len(trustedClientIPs) == 0 {
+	trustedClients.RLock()
+	defer trustedClients.RUnlock()
+	if len(trustedClients.ips) == 0 {
 		return true
 	}
-	for _, foundIP := range trustedClientIPs {
+	for _, foundIP := range trustedClients.ips {
 		if foundIP.Equal(ip) {
 			return true
 		}
