@@ -5,11 +5,16 @@ import (
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/binary"
+	"fmt"
 	"io"
 	"log"
 	"net"
+	"os"
+	"os/signal"
+	"runtime"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"golang.org/x/crypto/ed25519"
@@ -255,16 +260,54 @@ func acceptClient(conf Conf, conn net.Conn) {
 
 // RunServer - run a server
 func RunServer(conf Conf) {
+	go handleSignals()
+
 	listen, err := net.Listen("tcp", conf.Listen)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer listen.Close()
+
+	// start 2 workers per cpu
+	conns := make(chan net.Conn, runtime.NumCPU() * 4)
+	defer close(conns)
+	for i := 0; i <= runtime.NumCPU() * 2; i++ {
+		go func() {
+			for conn := range conns {
+				acceptClient(conf, conn)
+			}
+		}()
+	}
+
 	for {
 		conn, err := listen.Accept()
 		if err != nil {
 			log.Fatal(err)
 		}
-		go acceptClient(conf, conn)
+		conns <-conn
+	}
+
+}
+
+func handleSignals() {
+        signals := make(chan os.Signal, 1)
+        signal.Notify(signals, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGUSR1)
+
+	for {
+		select {
+		case signal, ok := <-signals:
+			if !ok { break }
+
+			switch(signal) {
+			case syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM:
+				os.Exit(2)
+			case syscall.SIGUSR1:
+				if len(storedContent.ciphertextWithNonce) > 0 {
+					fmt.Printf("%v: some data is stored\n", os.Args[0])
+				} else {
+					fmt.Printf("%v: no data stored yet\n", os.Args[0])
+				}
+			}
+		}
 	}
 }
