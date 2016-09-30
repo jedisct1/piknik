@@ -232,7 +232,7 @@ h1 := Hk,1(v || r' || h0)
 
 -> 'S' || h2 || Len(n || ct) || ekid || ts || s || n || ct
 s := Sig(n || ct)
-h2 := Hk,2(h1 || 'S' || ekid || s)
+h2 := Hk,2(h1 || 'S' || ekid || ts || s)
 
 <- Hk,3(h2)
 ```
@@ -251,7 +251,7 @@ h1 := Hk,1(v || r' || H0)
 -> opcode || h2
 h2 := Hk,2(h1 || opcode)
 
-<- Hk,3(h2 || ekid || s) || Len(n || ct) || ekid || ts || s || n || ct
+<- Hk,3(h2 || ekid || ts || s) || Len(n || ct) || ekid || ts || s || n || ct
 s := Sig(n || ct)
 ```
 
