@@ -161,7 +161,6 @@ func handleClientConnection(conf Conf, conn net.Conn) {
 	}
 	rbuf := make([]byte, 65)
 	if _, err := io.ReadFull(reader, rbuf); err != nil {
-		log.Print(err)
 		return
 	}
 	cnx.clientVersion = rbuf[0]
@@ -234,6 +233,11 @@ func isIPTrusted(conf Conf, ip net.IP) bool {
 }
 
 func acceptClient(conf Conf, conn net.Conn) {
+	handleClientConnection(conf, conn)
+	atomic.AddUint64(&clientsCount, ^uint64(0))
+}
+
+func maybeAcceptClient(conf Conf, conn net.Conn) {
 	conn.SetDeadline(time.Now().Add(conf.Timeout))
 	remoteIP := conn.RemoteAddr().(*net.TCPAddr).IP
 	for {
@@ -249,8 +253,7 @@ func acceptClient(conf Conf, conn net.Conn) {
 			break
 		}
 	}
-	handleClientConnection(conf, conn)
-	atomic.AddUint64(&clientsCount, ^uint64(0))
+	go acceptClient(conf, conn)
 }
 
 // RunServer - run a server
@@ -265,6 +268,6 @@ func RunServer(conf Conf) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		go acceptClient(conf, conn)
+		maybeAcceptClient(conf, conn)
 	}
 }
