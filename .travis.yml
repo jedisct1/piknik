@@ -6,12 +6,18 @@ os:
  - linux
 
 go:
-- 1.7
+- 1.7.1
 - tip
 
 script:
   - echo $TRAVIS_GO_VERSION
   - ./test.sh
+
+  - go clean
+  - env GOOS=plan9 go build
+
+  - go clean
+  - env GOOS=solaris go build
 
   - go clean
   - env GOOS=windows GOARCH=386 go build
@@ -105,7 +111,7 @@ deploy:
   on:
     repo: jedisct1/piknik
     tags: true
-    condition: "${TRAVIS_GO_VERSION} == 1.6.3"
+    condition: "${TRAVIS_GO_VERSION} == 1.7.1"
 
 after_deploy:
   - ls -l piknik-*.tar.gz
