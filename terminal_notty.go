@@ -1,4 +1,4 @@
-// +build !darwin,!dragonfly,!freebsd,!linux,!netbsd,!openbsd linux,appengine
+// +build !darwin,!dragonfly,!freebsd,!linux,!netbsd,!openbsd,!windows linux,appengine
 
 package main
 
