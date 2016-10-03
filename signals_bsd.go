@@ -1,4 +1,4 @@
-// +build !windows
+// +build darwin dragonfly freebsd netbsd openbsd
 
 package main
 
@@ -13,7 +13,7 @@ import (
 
 func handleSignals() {
 	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINFO)
+	signal.Notify(signals, syscall.SIGINFO)
 	for {
 		select {
 		case signal, ok := <-signals:
@@ -21,12 +21,6 @@ func handleSignals() {
 				break
 			}
 			switch signal {
-			case syscall.SIGINT:
-				os.Exit(128 + int(syscall.SIGINT))
-			case syscall.SIGQUIT:
-				os.Exit(128 + int(syscall.SIGQUIT))
-			case syscall.SIGTERM:
-				os.Exit(128 + int(syscall.SIGTERM))
 			case syscall.SIGINFO:
 				storedContent.RLock()
 				procName := "piknik"
