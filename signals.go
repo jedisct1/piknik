@@ -1,8 +1,8 @@
-// +build !windows 
+// +build !windows
 
 package main
 
-import(
+import (
 	"fmt"
 	"os"
 	"os/signal"
@@ -10,15 +10,17 @@ import(
 )
 
 func handleSignals() {
-        signals := make(chan os.Signal, 1)
-        signal.Notify(signals, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGUSR1)
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGUSR1)
 
 	for {
 		select {
 		case signal, ok := <-signals:
-			if !ok { break }
+			if !ok {
+				break
+			}
 
-			switch(signal) {
+			switch signal {
 			case syscall.SIGINT, syscall.SIGQUIT, syscall.SIGTERM:
 				os.Exit(2)
 			case syscall.SIGUSR1:
