@@ -17,7 +17,6 @@ import (
 
 	"github.com/yawning/chacha20"
 	"golang.org/x/crypto/ed25519"
-	"golang.org/x/crypto/ssh/terminal"
 )
 
 // DefaultClientVersion - Default client version
@@ -81,7 +80,7 @@ func (client *Client) copyOperation(h1 []byte) {
 	if subtle.ConstantTimeCompare(wh3, h3) != 1 {
 		log.Fatal("Incorrect authentication code")
 	}
-	if terminal.IsTerminal(int(syscall.Stderr)) {
+	if IsTerminal(int(syscall.Stderr)) {
 		os.Stderr.WriteString("Sent\n")
 	}
 }
