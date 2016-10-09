@@ -20,6 +20,7 @@ SignSk    = "7599dad4726247d301c00ce0dc0dbfb9144fa958b4e9db30209a8f9d840ac9ca"
 EncryptSk = "f313e1fd4ad5fee8841d40ca3d54e14041eb05bf7f4888ad8c800ceb61942db6"
 EOT
 
+glide install ||:
 go build
 $PIKNIK_S &
 pid=$!
