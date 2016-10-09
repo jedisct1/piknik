@@ -1,3 +1,10 @@
+* Version 0.9.1
+ - Piknik can now be compiled for Plan9 and Solaris.
+ - Sending an INFO signal to the server now prints whether the clipboard
+is empty or not.
+ - Godep was replaced with Glide.
+ - Documentation fixes.
+
 * Version 0.9
  - Support for protocol version 3 (Piknik <= 0.2) was removed from the server.
  Please upgrade the clients running these old versions.
