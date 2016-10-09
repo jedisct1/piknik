@@ -11,6 +11,8 @@ go:
 
 script:
   - echo $TRAVIS_GO_VERSION
+  - go get -v github.com/Masterminds/glide
+  - glide install
   - ./test.sh
 
   - go clean
