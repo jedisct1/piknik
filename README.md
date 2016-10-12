@@ -59,7 +59,6 @@ https://github.com/jedisct1/piknik/releases/latest
 ### Option 2 (on MacOS): use Homebrew
 
 ```bash
-$ brew tap jedisct1/piknik
 $ brew install piknik
 ```
 
