@@ -188,6 +188,14 @@ alias pkm='piknik -move'
 alias pkz='piknik -copy < /dev/null'
 ```
 
+# pkfr [<dir>] : send a whole directory to the clipboard, as a tar archive
+pkfr() {
+    tar czpvf - ${1:-.} | piknik -copy
+}
+
+# pkpr : extract clipboard content sent using the pkfr command
+alias pkpr='piknik -paste | tar xzhpvf -'
+
 ## Use cases
 
 Use it to:
