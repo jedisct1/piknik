@@ -196,6 +196,11 @@ pkfr() {
 # pkpr : extract clipboard content sent using the pkfr command
 alias pkpr='piknik -paste | tar xzhpvf -'
 
+## Piknik integration in third-party packages
+
+* The [Piknik package for Atom](https://atom.io/packages/piknik)
+allows copying/pasting text between hosts running the Atom text editor.
+
 ## Use cases
 
 Use it to:
