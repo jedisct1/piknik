@@ -200,6 +200,8 @@ alias pkpr='piknik -paste | tar xzhpvf -'
 
 * The [Piknik package for Atom](https://atom.io/packages/piknik)
 allows copying/pasting text between hosts running the Atom text editor.
+* The [Piknik package for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=jedisct1.piknik)
+allows copying/pasting text between hosts running the Visual Studio Code text editor.
 
 ## Use cases
 
