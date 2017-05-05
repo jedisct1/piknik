@@ -194,10 +194,10 @@ pkfr() {
 
 # pkpr : extract clipboard content sent using the pkfr command
 alias pkpr='piknik -paste | tar xzhpvf -'
-```
 
 # pkpr : extract clipboard content sent using the pkfr command
 alias pkpr='piknik -paste | tar xzhpvf -'
+```
 
 ## Piknik integration in third-party packages
 
