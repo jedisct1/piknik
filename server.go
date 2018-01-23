@@ -134,7 +134,7 @@ func (cnx *ClientConnection) storeOperation(h1 []byte) {
 	if ed25519.Verify(conf.SignPk, ciphertextWithNonce, signature) != true {
 		return
 	}
-	h3 := auth3store(conf, cnx.clientVersion, h2)
+	h3 := auth3store(conf, h2)
 
 	storedContent.Lock()
 	storedContent.encryptSkID = encryptSkID

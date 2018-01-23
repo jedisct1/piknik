@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
-	blake2b "github.com/minio/blake2b-simd"
+	"github.com/minio/blake2b-simd"
 	"github.com/mitchellh/go-homedir"
 )
 
