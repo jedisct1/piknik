@@ -84,7 +84,7 @@ func auth3get(conf Conf, clientVersion byte, h2 []byte, encryptSkID []byte,
 	return h3
 }
 
-func auth3store(conf Conf, clientVersion byte, h2 []byte) []byte {
+func auth3store(conf Conf, h2 []byte) []byte {
 	hf3, _ := blake2b.New(&blake2b.Config{
 		Key:    conf.Psk,
 		Person: []byte(DomainStr),

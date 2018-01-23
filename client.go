@@ -76,7 +76,7 @@ func (client *Client) copyOperation(h1 []byte) {
 		}
 	}
 	h3 := rbuf
-	wh3 := auth3store(conf, client.version, h2)
+	wh3 := auth3store(conf, h2)
 	if subtle.ConstantTimeCompare(wh3, h3) != 1 {
 		log.Fatal("Incorrect authentication code")
 	}
