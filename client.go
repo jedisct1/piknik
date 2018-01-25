@@ -64,7 +64,7 @@ func (client *Client) copyOperation(h1 []byte) {
 	writer.Write(ts)
 	writer.Write(signature)
 	writer.Write(ciphertextWithNonce)
-	if writer.Flush() != nil {
+	if err = writer.Flush(); err != nil {
 		log.Fatal(err)
 	}
 	rbuf := make([]byte, 32)
