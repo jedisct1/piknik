@@ -6,8 +6,8 @@ os:
  - linux
 
 go:
-- 1.10
-- tip
+- "1.10"
+- "master"
 
 script:
   - echo $TRAVIS_GO_VERSION
