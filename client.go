@@ -8,7 +8,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -32,38 +31,43 @@ type Client struct {
 }
 
 func (client *Client) copyOperation(h1 []byte) {
+	ts := make([]byte, 8)
+	binary.LittleEndian.PutUint64(ts, uint64(time.Now().Unix()))
+
+	var contentWithNonceBuf bytes.Buffer
+	contentWithNonceBuf.Grow(24 + bytes.MinRead)
+
+	nonce := make([]byte, 24)
+	if _, err := rand.Read(nonce); err != nil {
+		log.Fatal(err)
+	}
+	contentWithNonceBuf.Write(nonce)
+
 	conf, reader, writer := client.conf, client.reader, client.writer
-	content, err := ioutil.ReadAll(os.Stdin)
+	_, err := contentWithNonceBuf.ReadFrom(os.Stdin)
 	if err != nil {
 		log.Fatal(err)
 	}
-	nonce := make([]byte, 24)
-	if _, err = rand.Read(nonce); err != nil {
-		log.Fatal(err)
-	}
-	ts := make([]byte, 8)
-	binary.LittleEndian.PutUint64(ts, uint64(time.Now().Unix()))
+	contentWithNonce := contentWithNonceBuf.Bytes()
+
 	cipher, err := chacha20.NewCipher(conf.EncryptSk, nonce)
 	if err != nil {
 		log.Fatal(err)
 	}
 	opcode := byte('S')
-	ciphertextWithNonce := make([]byte, 24+len(content))
-	copy(ciphertextWithNonce, nonce)
-	ciphertext := ciphertextWithNonce[24:]
-	cipher.XORKeyStream(ciphertext, content)
-	signature := ed25519.Sign(conf.SignSk, ciphertextWithNonce)
+	cipher.XORKeyStream(contentWithNonce[24:], contentWithNonce[24:])
+	signature := ed25519.Sign(conf.SignSk, contentWithNonce)
 
 	client.conn.SetDeadline(time.Now().Add(conf.DataTimeout))
 	h2 := auth2store(conf, client.version, h1, opcode, conf.EncryptSkID, ts, signature)
 	writer.WriteByte(opcode)
 	writer.Write(h2)
-	ciphertextWithNonceLen := uint64(len(ciphertextWithNonce))
+	ciphertextWithNonceLen := uint64(len(contentWithNonce))
 	binary.Write(writer, binary.LittleEndian, ciphertextWithNonceLen)
 	writer.Write(conf.EncryptSkID)
 	writer.Write(ts)
 	writer.Write(signature)
-	writer.Write(ciphertextWithNonce)
+	writer.Write(contentWithNonce)
 	if err = writer.Flush(); err != nil {
 		log.Fatal(err)
 	}
@@ -146,9 +150,8 @@ func (client *Client) pasteOperation(h1 []byte, isMove bool) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	ciphertext := ciphertextWithNonce[24:]
-	cipher.XORKeyStream(ciphertext, ciphertext)
-	content := ciphertext
+	content := ciphertextWithNonce[24:]
+	cipher.XORKeyStream(content, content)
 	binary.Write(os.Stdout, binary.LittleEndian, content)
 }
 
