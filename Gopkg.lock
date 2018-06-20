@@ -17,7 +17,7 @@
   branch = "master"
   name = "github.com/mitchellh/go-homedir"
   packages = ["."]
-  revision = "b8bc1bf767474819792c23f32d8286a45736f1c6"
+  revision = "3864e76763d94a6df2f9960b16a20a33da9f9a66"
 
 [[projects]]
   branch = "master"
@@ -35,7 +35,7 @@
     "scrypt",
     "ssh/terminal"
   ]
-  revision = "13931e22f9e72ea58bb73048bc752b48c6d4d4ac"
+  revision = "7f39a6fea4fe9364fb61e1def6a268a51b4f3a06"
 
 [[projects]]
   branch = "master"
@@ -44,7 +44,7 @@
     "unix",
     "windows"
   ]
-  revision = "810d7000345868fc619eb81f46307107118f4ae1"
+  revision = "fc8bd948cf46f9c7af0f07d34151ce25fe90e477"
 
 [solve-meta]
   analyzer-name = "dep"
