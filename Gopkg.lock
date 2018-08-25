@@ -2,53 +2,73 @@
 
 
 [[projects]]
+  digest = "1:b16fbfbcc20645cb419f78325bb2e85ec729b338e996a228124d68931a6f2a37"
   name = "github.com/BurntSushi/toml"
   packages = ["."]
+  pruneopts = "UT"
   revision = "b26d9c308763d68093482582cea63d69be07a0f0"
   version = "v0.3.0"
 
 [[projects]]
   branch = "master"
+  digest = "1:130cefe87d7eeefc824978dcb78e35672d4c49a11f25c153fbf0cfd952756fa3"
   name = "github.com/minio/blake2b-simd"
   packages = ["."]
+  pruneopts = "UT"
   revision = "3f5f724cb5b182a5c278d6d3d55b40e7f8c2efb4"
 
 [[projects]]
   branch = "master"
+  digest = "1:c7354463195544b1ab3c1f1fadb41430947f5d28dfbf2cdbd38268c5717a5a03"
   name = "github.com/mitchellh/go-homedir"
   packages = ["."]
-  revision = "3864e76763d94a6df2f9960b16a20a33da9f9a66"
+  pruneopts = "UT"
+  revision = "58046073cbffe2f25d425fe1331102f55cf719de"
 
 [[projects]]
   branch = "master"
+  digest = "1:8fa55a6e302771a90a86ceae1ca3c0df4ef15d21092198e8313f61dde9eea963"
   name = "github.com/yawning/chacha20"
   packages = ["."]
+  pruneopts = "UT"
   revision = "e3b1f968fc6397b51d963fee8ec8711a47bc0ce8"
 
 [[projects]]
   branch = "master"
+  digest = "1:28c92854b02898c94c1d983db50970fb7d9b3ee31c3ae02b1c6afc665abcc46e"
   name = "golang.org/x/crypto"
   packages = [
     "ed25519",
     "ed25519/internal/edwards25519",
     "pbkdf2",
     "scrypt",
-    "ssh/terminal"
+    "ssh/terminal",
   ]
-  revision = "7f39a6fea4fe9364fb61e1def6a268a51b4f3a06"
+  pruneopts = "UT"
+  revision = "de0752318171da717af4ce24d0a2e8626afaeb11"
 
 [[projects]]
   branch = "master"
+  digest = "1:4d16433c0d2c24761b8a507e8c2e9c8cf9193b497d6b38aaeffca038070bc8f5"
   name = "golang.org/x/sys"
   packages = [
     "unix",
-    "windows"
+    "windows",
   ]
-  revision = "fc8bd948cf46f9c7af0f07d34151ce25fe90e477"
+  pruneopts = "UT"
+  revision = "904bdc257025c7b3f43c19360ad3ab85783fad78"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c93eb3fd27af13e02d30bc7cbc17668284fc7c61fbce6dfc747e645b5f8beea4"
+  input-imports = [
+    "github.com/BurntSushi/toml",
+    "github.com/minio/blake2b-simd",
+    "github.com/mitchellh/go-homedir",
+    "github.com/yawning/chacha20",
+    "golang.org/x/crypto/ed25519",
+    "golang.org/x/crypto/scrypt",
+    "golang.org/x/crypto/ssh/terminal",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1

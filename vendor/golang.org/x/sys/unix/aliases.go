@@ -3,17 +3,12 @@
 // license that can be found in the LICENSE file.
 
 // +build darwin dragonfly freebsd linux netbsd openbsd solaris
+// +build go1.9
 
-package unix_test
+package unix
 
-import (
-	"log"
-	"os"
+import "syscall"
 
-	"golang.org/x/sys/unix"
-)
-
-func ExampleExec() {
-	err := unix.Exec("/bin/ls", []string{"ls", "-al"}, os.Environ())
-	log.Fatal(err)
-}
+type Signal = syscall.Signal
+type Errno = syscall.Errno
+type SysProcAttr = syscall.SysProcAttr
