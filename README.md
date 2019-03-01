@@ -64,14 +64,15 @@ $ brew install piknik
 
 ### Option 3: compile the source code
 
-This project is written in Go. So, a Go compiler is required, as well as the following incantation:
+This project is written in Go.
+
+Go >= 1.11 is required, as well as the following incantation:
 
 ```bash
-$ export GOPATH=${GOPATH:-~/go} ; mkdir -p $GOPATH
-$ go get github.com/jedisct1/piknik
+$ go build
 ```
 
-The `piknik` executable file should then be available in `$GOPATH/bin`.
+The `piknik` executable file should then be available in current path.
 
 ## Setup
 
