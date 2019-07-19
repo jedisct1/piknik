@@ -126,7 +126,7 @@ func (client *Client) pasteOperation(h1 []byte, isMove bool) {
 	if elapsed >= conf.TTL {
 		log.Fatal("Clipboard content is too old")
 	}
-	if bytes.Equal(conf.EncryptSkID, encryptSkID) == false {
+	if !bytes.Equal(conf.EncryptSkID, encryptSkID) {
 		wEncryptSkIDStr := binary.LittleEndian.Uint64(conf.EncryptSkID)
 		encryptSkIDStr := binary.LittleEndian.Uint64(encryptSkID)
 		log.Fatal(fmt.Sprintf("Configured key ID is %v but content was encrypted using key ID %v",
@@ -142,7 +142,7 @@ func (client *Client) pasteOperation(h1 []byte, isMove bool) {
 			log.Fatal(err)
 		}
 	}
-	if ed25519.Verify(conf.SignPk, ciphertextWithNonce, signature) != true {
+	if !ed25519.Verify(conf.SignPk, ciphertextWithNonce, signature) {
 		log.Fatal("Signature doesn't verify")
 	}
 	nonce := ciphertextWithNonce[0:24]

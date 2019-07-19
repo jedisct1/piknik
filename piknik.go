@@ -125,7 +125,7 @@ func main() {
 		return
 	}
 	tomlData, err := ioutil.ReadFile(expandConfigFile(*configFile))
-	if err != nil && *isGenKeys == false {
+	if err != nil && !*isGenKeys {
 		log.Fatal(err)
 	}
 	var tomlConf tomlConfig
