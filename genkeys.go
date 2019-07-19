@@ -41,7 +41,7 @@ func (DeterministicRand) Read(p []byte) (n int, err error) {
 	for i := 0; i < reqLen; i++ {
 		deterministicRand.pool[i] = 0
 	}
-	deterministicRand.pos = deterministicRand.pos + reqLen
+	deterministicRand.pos += reqLen
 
 	return reqLen, nil
 }
