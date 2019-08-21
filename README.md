@@ -83,6 +83,8 @@ $ piknik -genkeys
 
 This generates random keys (highly recommended).
 
+You will need to copy parts (not all!) of that command's output to a `piknik.toml` configuration file.
+
 A temporary alternative is to derive the keys from a password. The same password will always generate the same set of keys, on all platforms. In order to do so, add the `-password` switch:
 
 ```bash
