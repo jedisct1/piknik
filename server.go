@@ -202,7 +202,7 @@ func handleClientConnection(conf Conf, conn net.Conn) {
 	}
 }
 
-// TrustedClients - Clients IPs having recently performed a succesful handshake
+// TrustedClients - Clients IPs having recently performed a successful handshake
 type TrustedClients struct {
 	sync.RWMutex
 
