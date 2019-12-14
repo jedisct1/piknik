@@ -1,5 +1,5 @@
 [![Latest release](https://img.shields.io/github/release/jedisct1/piknik.svg)](https://github.com/jedisct1/piknik/releases/latest)
-[![Build status](https://travis-ci.org/jedisct1/piknik.svg?branch=master)](https://travis-ci.org/jedisct1/piknik?branch=master)
+[![Build status](https://travis-ci.com/jedisct1/piknik.svg?branch=master)](https://travis-ci.com/jedisct1/piknik?branch=master)
 
 # Piknik
 Copy/paste anything over the network!
