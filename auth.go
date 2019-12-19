@@ -55,9 +55,9 @@ func auth2store(conf Conf, clientVersion byte, h1 []byte, opcode byte,
 	})
 	hf2.Write(h1)
 	hf2.Write([]byte{opcode})
-	hf2.Write(encryptSkID)
 	hf2.Write(ts)
 	hf2.Write(signature)
+	hf2.Write(encryptSkID)
 	h2 := hf2.Sum(nil)
 
 	return h2
@@ -72,9 +72,9 @@ func auth3get(conf Conf, clientVersion byte, h2 []byte, encryptSkID []byte,
 		Salt:   []byte{3},
 	})
 	hf3.Write(h2)
-	hf3.Write(encryptSkID)
 	hf3.Write(ts)
 	hf3.Write(signature)
+	hf3.Write(encryptSkID)
 	h3 := hf3.Sum(nil)
 
 	return h3

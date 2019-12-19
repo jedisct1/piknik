@@ -28,9 +28,9 @@ type ClientConnection struct {
 type StoredContent struct {
 	sync.RWMutex
 
-	encryptSkID         []byte
 	ts                  []byte
 	signature           []byte
+	encryptSkID         []byte
 	ciphertextWithNonce []byte
 }
 
@@ -77,9 +77,9 @@ func (cnx *ClientConnection) getOperation(h1 []byte, isMove bool) {
 	writer.Write(h3)
 	ciphertextWithNonceLen := uint64(len(ciphertextWithNonce))
 	binary.Write(writer, binary.LittleEndian, ciphertextWithNonceLen)
-	writer.Write(encryptSkID)
 	writer.Write(ts)
 	writer.Write(signature)
+	writer.Write(encryptSkID)
 	writer.Write(ciphertextWithNonce)
 	if err := writer.Flush(); err != nil {
 		log.Print(err)
@@ -102,9 +102,9 @@ func (cnx *ClientConnection) storeOperation(h1 []byte) {
 		return
 	}
 	var ts, signature, encryptSkID []byte
-	ts = rbuf[48:56]
-	signature = rbuf[56:120]
-	encryptSkID = rbuf[40:48]
+	ts = rbuf[40:48]
+	signature = rbuf[48:112]
+	encryptSkID = rbuf[112:120]
 	opcode := byte('S')
 
 	wh2 := auth2store(conf, cnx.clientVersion, h1, opcode, encryptSkID, ts, signature)
@@ -124,9 +124,9 @@ func (cnx *ClientConnection) storeOperation(h1 []byte) {
 	h3 := auth3store(conf, h2)
 
 	storedContent.Lock()
-	storedContent.encryptSkID = encryptSkID
 	storedContent.ts = ts
 	storedContent.signature = signature
+	storedContent.encryptSkID = encryptSkID
 	storedContent.ciphertextWithNonce = ciphertextWithNonce
 	storedContent.Unlock()
 
@@ -151,7 +151,7 @@ func handleClientConnection(conf Conf, conn net.Conn) {
 		return
 	}
 	cnx.clientVersion = rbuf[0]
-	if cnx.clientVersion < 5 || cnx.clientVersion > 5 {
+	if cnx.clientVersion != 6 {
 		log.Print("Unsupported client version - Please run the same version on the server and on the client")
 		return
 	}

@@ -19,7 +19,7 @@ import (
 )
 
 // DefaultClientVersion - Default client version
-const DefaultClientVersion = byte(5)
+const DefaultClientVersion = byte(6)
 
 // Client - Client data
 type Client struct {
@@ -64,9 +64,9 @@ func (client *Client) copyOperation(h1 []byte) {
 	writer.Write(h2)
 	ciphertextWithNonceLen := uint64(len(contentWithNonce))
 	binary.Write(writer, binary.LittleEndian, ciphertextWithNonceLen)
-	writer.Write(conf.EncryptSkID)
 	writer.Write(ts)
 	writer.Write(signature)
+	writer.Write(conf.EncryptSkID)
 	writer.Write(contentWithNonce)
 	if err = writer.Flush(); err != nil {
 		log.Fatal(err)
@@ -115,9 +115,9 @@ func (client *Client) pasteOperation(h1 []byte, isMove bool) {
 	}
 	h3 := rbuf[0:32]
 	ciphertextWithNonceLen := binary.LittleEndian.Uint64(rbuf[32:40])
-	encryptSkID := rbuf[40:48]
-	ts := rbuf[48:56]
-	signature := rbuf[56:120]
+	ts := rbuf[40:48]
+	signature := rbuf[48:112]
+	encryptSkID := rbuf[112:120]
 	wh3 := auth3get(conf, client.version, h2, encryptSkID, ts, signature)
 	if subtle.ConstantTimeCompare(wh3, h3) != 1 {
 		log.Fatal("Incorrect authentication code")
