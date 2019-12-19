@@ -34,40 +34,42 @@ func (client *Client) copyOperation(h1 []byte) {
 	ts := make([]byte, 8)
 	binary.LittleEndian.PutUint64(ts, uint64(time.Now().Unix()))
 
-	var contentWithNonceBuf bytes.Buffer
-	contentWithNonceBuf.Grow(24 + bytes.MinRead)
+	conf, reader, writer := client.conf, client.reader, client.writer
+
+	var contentWithEncryptSkIDAndNonceBuf bytes.Buffer
+	contentWithEncryptSkIDAndNonceBuf.Grow(8 + 24 + bytes.MinRead)
+
+	contentWithEncryptSkIDAndNonceBuf.Write(conf.EncryptSkID)
 
 	nonce := make([]byte, 24)
 	if _, err := rand.Read(nonce); err != nil {
 		log.Fatal(err)
 	}
-	contentWithNonceBuf.Write(nonce)
+	contentWithEncryptSkIDAndNonceBuf.Write(nonce)
 
-	conf, reader, writer := client.conf, client.reader, client.writer
-	_, err := contentWithNonceBuf.ReadFrom(os.Stdin)
+	_, err := contentWithEncryptSkIDAndNonceBuf.ReadFrom(os.Stdin)
 	if err != nil {
 		log.Fatal(err)
 	}
-	contentWithNonce := contentWithNonceBuf.Bytes()
+	contentWithEncryptSkIDAndNonce := contentWithEncryptSkIDAndNonceBuf.Bytes()
 
 	cipher, err := chacha20.NewCipher(conf.EncryptSk, nonce)
 	if err != nil {
 		log.Fatal(err)
 	}
 	opcode := byte('S')
-	cipher.XORKeyStream(contentWithNonce[24:], contentWithNonce[24:])
-	signature := ed25519.Sign(conf.SignSk, contentWithNonce)
+	cipher.XORKeyStream(contentWithEncryptSkIDAndNonce[8+24:], contentWithEncryptSkIDAndNonce[8+24:])
+	signature := ed25519.Sign(conf.SignSk, contentWithEncryptSkIDAndNonce)
 
 	client.conn.SetDeadline(time.Now().Add(conf.DataTimeout))
-	h2 := auth2store(conf, client.version, h1, opcode, conf.EncryptSkID, ts, signature)
+	h2 := auth2store(conf, client.version, h1, opcode, ts, signature)
 	writer.WriteByte(opcode)
 	writer.Write(h2)
-	ciphertextWithNonceLen := uint64(len(contentWithNonce))
-	binary.Write(writer, binary.LittleEndian, ciphertextWithNonceLen)
+	ciphertextWithEncryptSkIDAndNonceLen := uint64(len(contentWithEncryptSkIDAndNonce))
+	binary.Write(writer, binary.LittleEndian, ciphertextWithEncryptSkIDAndNonceLen)
 	writer.Write(ts)
 	writer.Write(signature)
-	writer.Write(conf.EncryptSkID)
-	writer.Write(contentWithNonce)
+	writer.Write(contentWithEncryptSkIDAndNonce)
 	if err = writer.Flush(); err != nil {
 		log.Fatal(err)
 	}
@@ -101,7 +103,7 @@ func (client *Client) pasteOperation(h1 []byte, isMove bool) {
 	if err := writer.Flush(); err != nil {
 		log.Fatal(err)
 	}
-	rbuf := make([]byte, 120)
+	rbuf := make([]byte, 112)
 	if nbread, err := io.ReadFull(reader, rbuf); err != nil {
 		if err == io.ErrUnexpectedEOF {
 			if nbread < 80 {
@@ -114,11 +116,10 @@ func (client *Client) pasteOperation(h1 []byte, isMove bool) {
 		}
 	}
 	h3 := rbuf[0:32]
-	ciphertextWithNonceLen := binary.LittleEndian.Uint64(rbuf[32:40])
+	ciphertextWithEncryptSkIDAndNonceLen := binary.LittleEndian.Uint64(rbuf[32:40])
 	ts := rbuf[40:48]
 	signature := rbuf[48:112]
-	encryptSkID := rbuf[112:120]
-	wh3 := auth3get(conf, client.version, h2, encryptSkID, ts, signature)
+	wh3 := auth3get(conf, client.version, h2, ts, signature)
 	if subtle.ConstantTimeCompare(wh3, h3) != 1 {
 		log.Fatal("Incorrect authentication code")
 	}
@@ -126,31 +127,34 @@ func (client *Client) pasteOperation(h1 []byte, isMove bool) {
 	if elapsed >= conf.TTL {
 		log.Fatal("Clipboard content is too old")
 	}
-	if bytes.Equal(conf.EncryptSkID, encryptSkID) == false {
-		wEncryptSkIDStr := binary.LittleEndian.Uint64(conf.EncryptSkID)
-		encryptSkIDStr := binary.LittleEndian.Uint64(encryptSkID)
-		log.Fatal(fmt.Sprintf("Configured key ID is %v but content was encrypted using key ID %v",
-			wEncryptSkIDStr, encryptSkIDStr))
+	if ciphertextWithEncryptSkIDAndNonceLen < 8+24 {
+		log.Fatal("Clipboard content is too short")
 	}
-	ciphertextWithNonce := make([]byte, ciphertextWithNonceLen)
-
+	ciphertextWithEncryptSkIDAndNonce := make([]byte, ciphertextWithEncryptSkIDAndNonceLen)
 	client.conn.SetDeadline(time.Now().Add(conf.DataTimeout))
-	if _, err := io.ReadFull(reader, ciphertextWithNonce); err != nil {
+	if _, err := io.ReadFull(reader, ciphertextWithEncryptSkIDAndNonce); err != nil {
 		if err == io.ErrUnexpectedEOF {
 			log.Fatal("The server may be running an incompatible version")
 		} else {
 			log.Fatal(err)
 		}
 	}
-	if ed25519.Verify(conf.SignPk, ciphertextWithNonce, signature) != true {
+	encryptSkID := ciphertextWithEncryptSkIDAndNonce[0:8]
+	if bytes.Equal(conf.EncryptSkID, encryptSkID) == false {
+		wEncryptSkIDStr := binary.LittleEndian.Uint64(conf.EncryptSkID)
+		encryptSkIDStr := binary.LittleEndian.Uint64(encryptSkID)
+		log.Fatal(fmt.Sprintf("Configured key ID is %v but content was encrypted using key ID %v",
+			wEncryptSkIDStr, encryptSkIDStr))
+	}
+	if ed25519.Verify(conf.SignPk, ciphertextWithEncryptSkIDAndNonce, signature) != true {
 		log.Fatal("Signature doesn't verify")
 	}
-	nonce := ciphertextWithNonce[0:24]
+	nonce := ciphertextWithEncryptSkIDAndNonce[8:32]
 	cipher, err := chacha20.NewCipher(conf.EncryptSk, nonce)
 	if err != nil {
 		log.Fatal(err)
 	}
-	content := ciphertextWithNonce[24:]
+	content := ciphertextWithEncryptSkIDAndNonce[32:]
 	cipher.XORKeyStream(content, content)
 	binary.Write(os.Stdout, binary.LittleEndian, content)
 }

@@ -236,7 +236,7 @@ r: random 256-bit client nonce
 r': random 256-bit server nonce
 ts: Unix timestamp as a 64-bit little endian integer
 Sig: Ed25519
-v: 5
+v: 6
 ```
 
 Copy:
@@ -247,9 +247,9 @@ h0 := Hk,0(v || r)
 <- v || r' || h1
 h1 := Hk,1(v || r' || h0)
 
--> 'S' || h2 || Len(n || ct) || ts || s || ekid || n || ct
-s := Sig(n || ct)
-h2 := Hk,2(h1 || 'S' || ts || s || ekid)
+-> 'S' || h2 || Len(ekid || n || ct) || ts || s || ekid || n || ct
+s := Sig(ekid || n || ct)
+h2 := Hk,2(h1 || 'S' || ts || s)
 
 <- Hk,3(h2)
 ```
@@ -268,8 +268,8 @@ h1 := Hk,1(v || r' || H0)
 -> opcode || h2
 h2 := Hk,2(h1 || opcode)
 
-<- Hk,3(h2 || ts || s || ekid) || Len(n || ct) || ts || s || ekid || n || ct
-s := Sig(n || ct)
+<- Hk,3(h2 || ts || s) || Len(ekid || n || ct) || ts || s || ekid || n || ct
+s := Sig(ekid || n || ct)
 ```
 
 ## License

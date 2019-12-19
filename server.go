@@ -28,10 +28,9 @@ type ClientConnection struct {
 type StoredContent struct {
 	sync.RWMutex
 
-	ts                  []byte
-	signature           []byte
-	encryptSkID         []byte
-	ciphertextWithNonce []byte
+	ts                                []byte
+	signature                         []byte
+	ciphertextWithEncryptSkIDAndNonce []byte
 }
 
 var storedContent StoredContent
@@ -55,32 +54,30 @@ func (cnx *ClientConnection) getOperation(h1 []byte, isMove bool) {
 		return
 	}
 
-	var encryptSkID, ts, signature, ciphertextWithNonce []byte
+	var ts, signature, ciphertextWithEncryptSkIDAndNonce []byte
 	if isMove {
 		storedContent.Lock()
-		encryptSkID, ts, signature, ciphertextWithNonce =
-			storedContent.encryptSkID, storedContent.ts,
-			storedContent.signature, storedContent.ciphertextWithNonce
-		storedContent.encryptSkID, storedContent.ts, storedContent.signature,
-			storedContent.ciphertextWithNonce = nil, nil, nil, nil
+		ts, signature, ciphertextWithEncryptSkIDAndNonce =
+			storedContent.ts, storedContent.signature, storedContent.ciphertextWithEncryptSkIDAndNonce
+		storedContent.ts, storedContent.signature,
+			storedContent.ciphertextWithEncryptSkIDAndNonce = nil, nil, nil
 		storedContent.Unlock()
 	} else {
 		storedContent.RLock()
-		encryptSkID, ts, signature, ciphertextWithNonce =
-			storedContent.encryptSkID, storedContent.ts, storedContent.signature,
-			storedContent.ciphertextWithNonce
+		ts, signature, ciphertextWithEncryptSkIDAndNonce =
+			storedContent.ts, storedContent.signature,
+			storedContent.ciphertextWithEncryptSkIDAndNonce
 		storedContent.RUnlock()
 	}
 
 	cnx.conn.SetDeadline(time.Now().Add(conf.DataTimeout))
-	h3 := auth3get(conf, cnx.clientVersion, h2, encryptSkID, ts, signature)
+	h3 := auth3get(conf, cnx.clientVersion, h2, ts, signature)
 	writer.Write(h3)
-	ciphertextWithNonceLen := uint64(len(ciphertextWithNonce))
-	binary.Write(writer, binary.LittleEndian, ciphertextWithNonceLen)
+	ciphertextWithEncryptSkIDAndNonceLen := uint64(len(ciphertextWithEncryptSkIDAndNonce))
+	binary.Write(writer, binary.LittleEndian, ciphertextWithEncryptSkIDAndNonceLen)
 	writer.Write(ts)
 	writer.Write(signature)
-	writer.Write(encryptSkID)
-	writer.Write(ciphertextWithNonce)
+	writer.Write(ciphertextWithEncryptSkIDAndNonce)
 	if err := writer.Flush(); err != nil {
 		log.Print(err)
 		return
@@ -89,36 +86,39 @@ func (cnx *ClientConnection) getOperation(h1 []byte, isMove bool) {
 
 func (cnx *ClientConnection) storeOperation(h1 []byte) {
 	conf, reader, writer := cnx.conf, cnx.reader, cnx.writer
-	rbuf := make([]byte, 120)
+	rbuf := make([]byte, 112)
 	if _, err := io.ReadFull(reader, rbuf); err != nil {
 		log.Print(err)
 		return
 	}
 	h2 := rbuf[0:32]
-	ciphertextWithNonceLen := binary.LittleEndian.Uint64(rbuf[32:40])
-	if conf.MaxLen > 0 && ciphertextWithNonceLen > conf.MaxLen {
-		log.Printf("%v bytes requested to be stored, but limit set to %v bytes (%v Mb)\n",
-			ciphertextWithNonceLen, conf.MaxLen, conf.MaxLen/(1024*1024))
+	ciphertextWithEncryptSkIDAndNonceLen := binary.LittleEndian.Uint64(rbuf[32:40])
+	if ciphertextWithEncryptSkIDAndNonceLen < 8+24 {
+		log.Printf("Short encrypted message (only %v bytes)\n", ciphertextWithEncryptSkIDAndNonceLen)
 		return
 	}
-	var ts, signature, encryptSkID []byte
+	if conf.MaxLen > 0 && ciphertextWithEncryptSkIDAndNonceLen > conf.MaxLen {
+		log.Printf("%v bytes requested to be stored, but limit set to %v bytes (%v Mb)\n",
+			ciphertextWithEncryptSkIDAndNonceLen, conf.MaxLen, conf.MaxLen/(1024*1024))
+		return
+	}
+	var ts, signature []byte
 	ts = rbuf[40:48]
 	signature = rbuf[48:112]
-	encryptSkID = rbuf[112:120]
 	opcode := byte('S')
 
-	wh2 := auth2store(conf, cnx.clientVersion, h1, opcode, encryptSkID, ts, signature)
+	wh2 := auth2store(conf, cnx.clientVersion, h1, opcode, ts, signature)
 	if subtle.ConstantTimeCompare(wh2, h2) != 1 {
 		return
 	}
-	ciphertextWithNonce := make([]byte, ciphertextWithNonceLen)
+	ciphertextWithEncryptSkIDAndNonce := make([]byte, ciphertextWithEncryptSkIDAndNonceLen)
 
 	cnx.conn.SetDeadline(time.Now().Add(conf.DataTimeout))
-	if _, err := io.ReadFull(reader, ciphertextWithNonce); err != nil {
+	if _, err := io.ReadFull(reader, ciphertextWithEncryptSkIDAndNonce); err != nil {
 		log.Print(err)
 		return
 	}
-	if ed25519.Verify(conf.SignPk, ciphertextWithNonce, signature) != true {
+	if ed25519.Verify(conf.SignPk, ciphertextWithEncryptSkIDAndNonce, signature) != true {
 		return
 	}
 	h3 := auth3store(conf, h2)
@@ -126,8 +126,7 @@ func (cnx *ClientConnection) storeOperation(h1 []byte) {
 	storedContent.Lock()
 	storedContent.ts = ts
 	storedContent.signature = signature
-	storedContent.encryptSkID = encryptSkID
-	storedContent.ciphertextWithNonce = ciphertextWithNonce
+	storedContent.ciphertextWithEncryptSkIDAndNonce = ciphertextWithEncryptSkIDAndNonce
 	storedContent.Unlock()
 
 	writer.Write(h3)
