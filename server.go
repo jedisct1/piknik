@@ -78,9 +78,7 @@ func (cnx *ClientConnection) getOperation(h1 []byte, isMove bool) {
 	ciphertextWithNonceLen := uint64(len(ciphertextWithNonce))
 	binary.Write(writer, binary.LittleEndian, ciphertextWithNonceLen)
 	writer.Write(encryptSkID)
-	if cnx.clientVersion >= 5 {
-		writer.Write(ts)
-	}
+	writer.Write(ts)
 	writer.Write(signature)
 	writer.Write(ciphertextWithNonce)
 	if err := writer.Flush(); err != nil {
@@ -91,12 +89,7 @@ func (cnx *ClientConnection) getOperation(h1 []byte, isMove bool) {
 
 func (cnx *ClientConnection) storeOperation(h1 []byte) {
 	conf, reader, writer := cnx.conf, cnx.reader, cnx.writer
-	var rbuf []byte
-	if cnx.clientVersion < 5 {
-		rbuf = make([]byte, 112)
-	} else {
-		rbuf = make([]byte, 120)
-	}
+	rbuf := make([]byte, 120)
 	if _, err := io.ReadFull(reader, rbuf); err != nil {
 		log.Print(err)
 		return
@@ -108,16 +101,10 @@ func (cnx *ClientConnection) storeOperation(h1 []byte) {
 			ciphertextWithNonceLen, conf.MaxLen, conf.MaxLen/(1024*1024))
 		return
 	}
-	encryptSkID := rbuf[40:48]
-	var ts, signature []byte
-	if cnx.clientVersion < 5 {
-		ts = make([]byte, 8)
-		binary.LittleEndian.PutUint64(ts, uint64(time.Now().Unix()))
-		signature = rbuf[48:112]
-	} else {
-		ts = rbuf[48:56]
-		signature = rbuf[56:120]
-	}
+	var ts, signature, encryptSkID []byte
+	ts = rbuf[48:56]
+	signature = rbuf[56:120]
+	encryptSkID = rbuf[40:48]
 	opcode := byte('S')
 
 	wh2 := auth2store(conf, cnx.clientVersion, h1, opcode, encryptSkID, ts, signature)
@@ -164,7 +151,7 @@ func handleClientConnection(conf Conf, conn net.Conn) {
 		return
 	}
 	cnx.clientVersion = rbuf[0]
-	if cnx.clientVersion < 4 || cnx.clientVersion > 5 {
+	if cnx.clientVersion < 5 || cnx.clientVersion > 5 {
 		log.Print("Unsupported client version - Please run the same version on the server and on the client")
 		return
 	}
