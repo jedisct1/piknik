@@ -2,6 +2,7 @@
 [![Build status](https://travis-ci.com/jedisct1/piknik.svg?branch=master)](https://travis-ci.com/jedisct1/piknik?branch=master)
 
 # Piknik
+
 Copy/paste anything over the network!
 
 [[watch a demo on Asciinema](https://asciinema.org/a/80708)] -
@@ -17,14 +18,14 @@ No SSH needed, and hosts can sit behind NAT gateways, on different networks.
 
 Fill in the clipboard ("copy") with whatever comes in to the standard input:
 
-```bash
+```sh
 $ pkc
 clipboard content
 ```
 
 Magically retrieve that content from any other host having Piknik installed with the same configuration:
 
-```bash
+```sh
 $ pkp
 clipboard content
 ```
@@ -33,12 +34,12 @@ Boom.
 
 Obviously, it can be used to transfer files as well:
 
-```bash
+```sh
 $ pkc < kitten.gif
 $ pkp > kittencopy.gif
 ```
 
-```bash
+```sh
 $ tar cvf - *.txt | pkc
 $ pkp | tar xvf -
 ```
@@ -58,7 +59,7 @@ https://github.com/jedisct1/piknik/releases/latest
 
 ### Option 2 (on MacOS): use Homebrew
 
-```bash
+```sh
 $ brew install piknik
 ```
 
@@ -68,7 +69,7 @@ This project is written in Go.
 
 Go >= 1.11 is required, as well as the following incantation:
 
-```bash
+```sh
 $ go build
 ```
 
@@ -78,7 +79,7 @@ The `piknik` executable file should then be available in current path.
 
 Piknik requires a bunch of keys. Generate them all with
 
-```bash
+```sh
 $ piknik -genkeys
 ```
 
@@ -88,7 +89,7 @@ You will need to copy parts (not all!) of that command's output to a `piknik.tom
 
 A temporary alternative is to derive the keys from a password. The same password will always generate the same set of keys, on all platforms. In order to do so, add the `-password` switch:
 
-```bash
+```sh
 $ piknik -genkeys -password
 ```
 
@@ -101,6 +102,7 @@ Is a host gonna act both as a staging server and as a client? Ponder on it befor
 The default location for the configuration file is `~/.piknik.toml`. With the exception of Windows, where dot-files are not so common. On that platform, the file is simply called `piknik.toml`.
 
 Sample configuration file for a staging server:
+
 ```toml
 Listen = "0.0.0.0:8075"         # Edit appropriately
 Psk    = "bf82bab384697243fbf616d3428477a563e33268f0f2307dd14e7245dd8c995d"
@@ -108,6 +110,7 @@ SignPk = "0c41ca9b0a1b5fe4daae789534e72329a93a352a6ad73d6f1d368d8eff37271c"
 ```
 
 Sample configuration file for clients:
+
 ```toml
 Connect   = "127.0.0.1:8075"    # Edit appropriately
 Psk       = "bf82bab384697243fbf616d3428477a563e33268f0f2307dd14e7245dd8c995d"
@@ -126,7 +129,7 @@ Don't like the default config file location? Use the `-config` switch.
 
 Run the following command on the staging server (or use `runit`, `openrc`, `systemd`, whatever to run it as a background service):
 
-```bash
+```sh
 $ piknik -server
 ```
 
@@ -136,20 +139,20 @@ Commands without a valid API key (present in the client configuration file) will
 
 ## Usage (clients)
 
-```bash
+```sh
 $ piknik -copy
 ```
 
 Copy the standard input to the clipboard.
 
-```bash
+```sh
 $ piknik -paste
 ```
 
 Retrieve the content of the clipboard and spit it to the standard output.
 `-paste` is actually a no-op. This is the default action if `-copy` was not specified.
 
-```bash
+```sh
 $ piknik -move
 ```
 
@@ -167,7 +170,7 @@ Wait. Where are the `pkc` and `pkp` commands mentioned earlier?
 
 Sample shell aliases:
 
-```bash
+```sh
 # pko <content> : copy <content> to the clipboard
 pko() {
     echo "$*" | piknik -copy
@@ -210,20 +213,21 @@ allows copying/pasting text between hosts running the Visual Studio Code text ed
 
 Use it to:
 
-- Securely send passwords, API keys, URLs from one host to another
-- Share a clipboard with your teammates (which can be a lot of fun)
-- Copy data from/to isolated VMs, without the VMWare tools or shared volumes (great for unsupported operating systems and malware sandboxes)
-- Copy files from/to a Windows machine, without Samba or SSH
-- Transfer data between hosts sitting behind firewalls/NAT gateways
-- Easily copy configuration files to multiple hosts
-- Start a slow download at the office, retrieve it later at home
-- Quickly backup a file to the cloud before messing with it
-- ...and more!
+* Securely send passwords, API keys, URLs from one host to another
+* Share a clipboard with your teammates (which can be a lot of fun)
+* Copy data from/to isolated VMs, without the VMWare tools or shared volumes (great for unsupported operating systems and malware sandboxes)
+* Copy files from/to a Windows machine, without Samba or SSH
+* Transfer data between hosts sitting behind firewalls/NAT gateways
+* Easily copy configuration files to multiple hosts
+* Start a slow download at the office, retrieve it later at home
+* Quickly backup a file to the cloud before messing with it
+* ...and more!
 
 ## Protocol
 
 Common definitions:
-```
+
+```text
 k: API key
 ek: 256-bit symmetric encryption key
 ekid: encryption key id encoded as a 64-bit little endian integer
@@ -240,7 +244,8 @@ v: 6
 ```
 
 Copy:
-```
+
+```text
 -> v || r || h0
 h0 := Hk,0(v || r)
 
@@ -255,7 +260,8 @@ h2 := Hk,2(h1 || 'S' || ts || s)
 ```
 
 Move/Paste:
-```
+
+```text
 Move:  opcode := 'M'
 Paste: opcode := 'G'
 
