@@ -14,7 +14,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/yawning/chacha20"
+	"gitlab.com/yawning/chacha20.git"
 	"golang.org/x/crypto/ed25519"
 )
 
@@ -53,7 +53,7 @@ func (client *Client) copyOperation(h1 []byte) {
 	}
 	contentWithEncryptSkIDAndNonce := contentWithEncryptSkIDAndNonceBuf.Bytes()
 
-	cipher, err := chacha20.NewCipher(conf.EncryptSk, nonce)
+	cipher, err := chacha20.New(conf.EncryptSk, nonce)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -150,7 +150,7 @@ func (client *Client) pasteOperation(h1 []byte, isMove bool) {
 		log.Fatal("Signature doesn't verify")
 	}
 	nonce := ciphertextWithEncryptSkIDAndNonce[8:32]
-	cipher, err := chacha20.NewCipher(conf.EncryptSk, nonce)
+	cipher, err := chacha20.New(conf.EncryptSk, nonce)
 	if err != nil {
 		log.Fatal(err)
 	}

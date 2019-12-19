@@ -10,7 +10,7 @@ go:
 
 script:
   - echo $TRAVIS_GO_VERSION
-  - go build
+  - go build -mod vendor -race
   - ./test.sh
 
   - go clean
