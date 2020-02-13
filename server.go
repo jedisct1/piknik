@@ -161,7 +161,7 @@ func handleClientConnection(conf Conf, conn net.Conn) {
 		return
 	}
 	r2 := make([]byte, 32)
-	if _, err := rand.Read(r); err != nil {
+	if _, err := rand.Read(r2); err != nil {
 		log.Fatal(err)
 	}
 	h1 := auth1(conf, cnx.clientVersion, h0, r2)
