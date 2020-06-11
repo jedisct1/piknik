@@ -1,5 +1,6 @@
 [![Latest release](https://img.shields.io/github/release/jedisct1/piknik.svg)](https://github.com/jedisct1/piknik/releases/latest)
 [![Build status](https://travis-ci.com/jedisct1/piknik.svg?branch=master)](https://travis-ci.com/jedisct1/piknik?branch=master)
+![CodeQL scan](https://github.com/jedisct1/piknik/workflows/Code%20scanning%20-%20action/badge.svg)
 
 # Piknik
 
