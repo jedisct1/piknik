@@ -13,14 +13,17 @@ gitlab.com/yawning/chacha20.git
 gitlab.com/yawning/chacha20.git/internal/api
 gitlab.com/yawning/chacha20.git/internal/hardware
 gitlab.com/yawning/chacha20.git/internal/ref
-# golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897
+# golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
 ## explicit
 golang.org/x/crypto/ed25519
 golang.org/x/crypto/ed25519/internal/edwards25519
 golang.org/x/crypto/pbkdf2
 golang.org/x/crypto/scrypt
 golang.org/x/crypto/ssh/terminal
-# golang.org/x/sys v0.0.0-20190902133755-9109b7679e13
+# golang.org/x/sys v0.0.0-20191026070338-33540a1f6037
 golang.org/x/sys/cpu
+golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
+# golang.org/x/term v0.0.0-20201117132131-f5c789dd3221
+golang.org/x/term
