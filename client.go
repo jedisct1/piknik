@@ -14,7 +14,7 @@ import (
 	"syscall"
 	"time"
 
-	"gitlab.com/yawning/chacha20.git"
+	"golang.org/x/crypto/chacha20"
 	"golang.org/x/crypto/ed25519"
 )
 
@@ -53,7 +53,7 @@ func (client *Client) copyOperation(h1 []byte) {
 	}
 	contentWithEncryptSkIDAndNonce := contentWithEncryptSkIDAndNonceBuf.Bytes()
 
-	cipher, err := chacha20.New(conf.EncryptSk, nonce)
+	cipher, err := chacha20.NewUnauthenticatedCipher(conf.EncryptSk, nonce)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -140,17 +140,17 @@ func (client *Client) pasteOperation(h1 []byte, isMove bool) {
 		}
 	}
 	encryptSkID := ciphertextWithEncryptSkIDAndNonce[0:8]
-	if bytes.Equal(conf.EncryptSkID, encryptSkID) == false {
+	if !bytes.Equal(conf.EncryptSkID, encryptSkID) {
 		wEncryptSkIDStr := binary.LittleEndian.Uint64(conf.EncryptSkID)
 		encryptSkIDStr := binary.LittleEndian.Uint64(encryptSkID)
 		log.Fatal(fmt.Sprintf("Configured key ID is %v but content was encrypted using key ID %v",
 			wEncryptSkIDStr, encryptSkIDStr))
 	}
-	if ed25519.Verify(conf.SignPk, ciphertextWithEncryptSkIDAndNonce, signature) != true {
+	if !ed25519.Verify(conf.SignPk, ciphertextWithEncryptSkIDAndNonce, signature) {
 		log.Fatal("Signature doesn't verify")
 	}
 	nonce := ciphertextWithEncryptSkIDAndNonce[8:32]
-	cipher, err := chacha20.New(conf.EncryptSk, nonce)
+	cipher, err := chacha20.NewUnauthenticatedCipher(conf.EncryptSk, nonce)
 	if err != nil {
 		log.Fatal(err)
 	}

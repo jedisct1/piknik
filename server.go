@@ -118,7 +118,7 @@ func (cnx *ClientConnection) storeOperation(h1 []byte) {
 		log.Print(err)
 		return
 	}
-	if ed25519.Verify(conf.SignPk, ciphertextWithEncryptSkIDAndNonce, signature) != true {
+	if !ed25519.Verify(conf.SignPk, ciphertextWithEncryptSkIDAndNonce, signature) {
 		return
 	}
 	h3 := auth3store(conf, h2)
@@ -229,7 +229,7 @@ func maybeAcceptClient(conf Conf, conn net.Conn) {
 	remoteIP := conn.RemoteAddr().(*net.TCPAddr).IP
 	for {
 		count := atomic.LoadUint64(&clientsCount)
-		if count >= conf.MaxClients-conf.TrustedIPCount && isIPTrusted(conf, remoteIP) == false {
+		if count >= conf.MaxClients-conf.TrustedIPCount && !isIPTrusted(conf, remoteIP) {
 			conn.Close()
 			return
 		}
