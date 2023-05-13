@@ -1,3 +1,4 @@
+//go:build (!darwin && !dragonfly && !freebsd && !linux && !netbsd && !openbsd && !windows) || (linux && appengine)
 // +build !darwin,!dragonfly,!freebsd,!linux,!netbsd,!openbsd,!windows linux,appengine
 
 package main

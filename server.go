@@ -33,9 +33,11 @@ type StoredContent struct {
 	ciphertextWithEncryptSkIDAndNonce []byte
 }
 
-var storedContent StoredContent
-var trustedClients TrustedClients
-var clientsCount = uint64(0)
+var (
+	storedContent  StoredContent
+	trustedClients TrustedClients
+	clientsCount   = uint64(0)
+)
 
 func (cnx *ClientConnection) getOperation(h1 []byte, isMove bool) {
 	conf, reader, writer := cnx.conf, cnx.reader, cnx.writer
@@ -57,15 +59,13 @@ func (cnx *ClientConnection) getOperation(h1 []byte, isMove bool) {
 	var ts, signature, ciphertextWithEncryptSkIDAndNonce []byte
 	if isMove {
 		storedContent.Lock()
-		ts, signature, ciphertextWithEncryptSkIDAndNonce =
-			storedContent.ts, storedContent.signature, storedContent.ciphertextWithEncryptSkIDAndNonce
+		ts, signature, ciphertextWithEncryptSkIDAndNonce = storedContent.ts, storedContent.signature, storedContent.ciphertextWithEncryptSkIDAndNonce
 		storedContent.ts, storedContent.signature,
 			storedContent.ciphertextWithEncryptSkIDAndNonce = nil, nil, nil
 		storedContent.Unlock()
 	} else {
 		storedContent.RLock()
-		ts, signature, ciphertextWithEncryptSkIDAndNonce =
-			storedContent.ts, storedContent.signature,
+		ts, signature, ciphertextWithEncryptSkIDAndNonce = storedContent.ts, storedContent.signature,
 			storedContent.ciphertextWithEncryptSkIDAndNonce
 		storedContent.RUnlock()
 	}
