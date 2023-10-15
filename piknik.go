@@ -5,8 +5,8 @@ import (
 	"encoding/hex"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 	"runtime"
 	"time"
 
@@ -124,7 +124,7 @@ func main() {
 		version()
 		return
 	}
-	tomlData, err := ioutil.ReadFile(expandConfigFile(*configFile))
+	tomlData, err := os.ReadFile(expandConfigFile(*configFile))
 	if err != nil && !*isGenKeys {
 		log.Fatal(err)
 	}
