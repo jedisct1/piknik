@@ -31,11 +31,11 @@ func handleSignals() {
 				fmt.Printf("%v: the clipboard is empty\n", procName)
 			} else {
 				elapsed := time.Since(time.Unix(int64(binary.LittleEndian.Uint64(storedContent.ts)), 0))
-				if elapsed <= 1 {
+				if elapsed <= time.Minute {
 					fmt.Printf("%v: the clipboard is not empty (last filled a few moments ago)\n",
 						procName)
 				} else {
-					fmt.Printf("%v: the clipboard is not empty (last filled %v minutes ago)\n",
+					fmt.Printf("%v: the clipboard is not empty (last filled %v ago)\n",
 						procName, elapsed)
 				}
 			}
