@@ -39,7 +39,7 @@ func (DeterministicRand) Read(p []byte) (n int, err error) {
 	}
 	copy(p, deterministicRand.pool[deterministicRand.pos:deterministicRand.pos+reqLen])
 	for i := 0; i < reqLen; i++ {
-		deterministicRand.pool[i] = 0
+		deterministicRand.pool[deterministicRand.pos+i] = 0
 	}
 	deterministicRand.pos += reqLen
 
