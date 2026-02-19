@@ -361,7 +361,7 @@ Push (sender):
 h2 := Hk,2(h1 || 'P')
 
 <- status                               (1 byte: 0x01=accepted,
-                                          0x00=no pullers, 0x02=busy)
+                                         0x00=no pullers, 0x02=busy)
 
 -> ts || ekid || np                     (stream header, 32 bytes)
 
@@ -382,14 +382,20 @@ Pull (receiver):
 -> v=7 || r || h0                       (handshake)
 <- v=7 || r' || h1
 
--> 'L' || h2                            (opcode auth, then wait)
+-> 'L' || h2                            (opcode auth)
 h2 := Hk,2(h1 || 'L')
+
+<- status                               (1 byte: 0x01=accepted,
+                                         0x00=stream active, 0x02=full)
 
 <- ts || ekid || np                     (stream header)
 <- uint32_le(len) || sealed_chunk       (data frames)
 ...
 <- uint32_le(0) || signature            (end frame)
 ```
+
+The server rejects the pull immediately if a push is already in
+progress or if the maximum number of waiting pullers has been reached.
 
 The transcript hash covers:
 
