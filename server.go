@@ -171,11 +171,15 @@ func (cnx *ClientConnection) pullStreamOperation(h1 []byte) {
 	if streamHub.pushActive {
 		streamHub.mu.Unlock()
 		log.Print("Stream pull rejected: stream already active")
+		writer.WriteByte(0x00)
+		writer.Flush()
 		return
 	}
 	if uint(len(streamHub.pullers)) >= conf.MaxWaitingPullers {
 		streamHub.mu.Unlock()
 		log.Print("Stream pull rejected: too many waiting pullers")
+		writer.WriteByte(0x02)
+		writer.Flush()
 		return
 	}
 	sub := &subscriber{
@@ -194,6 +198,12 @@ func (cnx *ClientConnection) pullStreamOperation(h1 []byte) {
 		streamHub.mu.Unlock()
 		close(sub.done)
 	}()
+
+	writer.WriteByte(0x01)
+	if err := writer.Flush(); err != nil {
+		log.Printf("Puller %v: failed to send accept status: %v", id, err)
+		return
+	}
 
 	_ = reader
 	waitTimeout := conf.TTL
