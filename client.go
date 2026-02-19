@@ -9,17 +9,18 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"net"
 	"os"
 	"syscall"
 	"time"
 
 	"golang.org/x/crypto/chacha20"
+	"golang.org/x/crypto/chacha20poly1305"
 	"golang.org/x/crypto/ed25519"
 )
 
-// DefaultClientVersion - Default client version
-const DefaultClientVersion = byte(6)
+const DefaultClientVersion = byte(7)
 
 // Client - Client data
 type Client struct {
@@ -143,8 +144,8 @@ func (client *Client) pasteOperation(h1 []byte, isMove bool) {
 	if !bytes.Equal(conf.EncryptSkID, encryptSkID) {
 		wEncryptSkIDStr := binary.LittleEndian.Uint64(conf.EncryptSkID)
 		encryptSkIDStr := binary.LittleEndian.Uint64(encryptSkID)
-		log.Fatal(fmt.Sprintf("Configured key ID is %v but content was encrypted using key ID %v",
-			wEncryptSkIDStr, encryptSkIDStr))
+		log.Fatalf("Configured key ID is %v but content was encrypted using key ID %v",
+			wEncryptSkIDStr, encryptSkIDStr)
 	}
 	if !ed25519.Verify(conf.SignPk, ciphertextWithEncryptSkIDAndNonce, signature) {
 		log.Fatal("Signature doesn't verify")
@@ -159,14 +160,251 @@ func (client *Client) pasteOperation(h1 []byte, isMove bool) {
 	binary.Write(os.Stdout, binary.LittleEndian, content)
 }
 
-// RunClient - Process a client query
-func RunClient(conf Conf, isCopy bool, isMove bool) {
+func (client *Client) pushStreamOperation(h1 []byte, cid string) {
+	conf, reader, writer := client.conf, client.reader, client.writer
+	opcode := byte('P')
+	h2 := auth2get(conf, client.version, h1, opcode)
+	writer.WriteByte(opcode)
+	writer.Write(h2)
+	if err := writer.Flush(); err != nil {
+		log.Fatal(err)
+	}
+
+	cidBytes := []byte(cid)
+
+	ts := make([]byte, 8)
+	binary.LittleEndian.PutUint64(ts, uint64(time.Now().Unix()))
+
+	noncePrefix := make([]byte, 16)
+	if _, err := rand.Read(noncePrefix); err != nil {
+		log.Fatal(err)
+	}
+
+	streamKey := deriveStreamKey(conf.EncryptSk, ts, conf.EncryptSkID, noncePrefix, cidBytes)
+	aead, err := chacha20poly1305.NewX(streamKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	cidBind := computeCIDBind(conf.EncryptSk, cidBytes)
+	transcript := newTranscriptHash()
+	transcript.Write([]byte{client.version})
+	transcript.Write([]byte{opcode})
+	transcript.Write(ts)
+	transcript.Write(conf.EncryptSkID)
+	transcript.Write(noncePrefix)
+	transcript.Write(cidBind)
+
+	header := make([]byte, 32)
+	copy(header[0:8], ts)
+	copy(header[8:16], conf.EncryptSkID)
+	copy(header[16:32], noncePrefix)
+
+	client.conn.SetDeadline(time.Now().Add(conf.DataTimeout))
+	writer.Write(header)
+	if err := writer.Flush(); err != nil {
+		log.Fatal(err)
+	}
+
+	plainBuf := make([]byte, MaxChunk)
+	var chunkIndex uint64
+
+	for {
+		n, readErr := io.ReadAtLeast(os.Stdin, plainBuf, 1)
+		if n > 0 {
+			nonce := deriveChunkNonce(noncePrefix, chunkIndex)
+			sealed := aead.Seal(nil, nonce, plainBuf[:n], nil)
+
+			chunkLen := uint32(n)
+			lenBuf := make([]byte, 4)
+			binary.LittleEndian.PutUint32(lenBuf, chunkLen)
+
+			idxBuf := make([]byte, 8)
+			binary.LittleEndian.PutUint64(idxBuf, chunkIndex)
+			transcript.Write(idxBuf)
+			transcript.Write(lenBuf)
+			transcript.Write(sealed)
+
+			client.conn.SetDeadline(time.Now().Add(conf.DataTimeout))
+			writer.Write(lenBuf)
+			writer.Write(sealed)
+			if err := writer.Flush(); err != nil {
+				log.Fatal(err)
+			}
+			chunkIndex++
+		}
+		if readErr != nil {
+			if readErr == io.EOF || readErr == io.ErrUnexpectedEOF {
+				break
+			}
+			log.Fatal(readErr)
+		}
+	}
+
+	transcriptDigest := transcript.Sum(nil)
+	signature := ed25519.Sign(conf.SignSk, transcriptDigest)
+
+	endMarker := make([]byte, 4)
+	client.conn.SetDeadline(time.Now().Add(conf.DataTimeout))
+	writer.Write(endMarker)
+	writer.Write(signature)
+	if err := writer.Flush(); err != nil {
+		log.Fatal(err)
+	}
+
+	_ = reader
+	if IsTerminal(int(syscall.Stderr)) {
+		os.Stderr.WriteString("Stream sent\n")
+	}
+}
+
+func (client *Client) pullStreamOperation(h1 []byte, cid string) {
+	conf, reader, writer := client.conf, client.reader, client.writer
+	opcode := byte('L')
+	h2 := auth2get(conf, client.version, h1, opcode)
+	writer.WriteByte(opcode)
+	writer.Write(h2)
+	if err := writer.Flush(); err != nil {
+		log.Fatal(err)
+	}
+
+	cidBytes := []byte(cid)
+
+	client.conn.SetDeadline(time.Time{})
+
+	header := make([]byte, 32)
+	if _, err := io.ReadFull(reader, header); err != nil {
+		log.Fatal("Stream: failed to read header: ", err)
+	}
+
+	ts := header[0:8]
+	encryptSkID := header[8:16]
+	noncePrefix := header[16:32]
+
+	tsRaw := binary.LittleEndian.Uint64(ts)
+	if tsRaw > uint64(math.MaxInt64) {
+		log.Fatal("Stream rejected: invalid timestamp")
+	}
+	tsVal := int64(tsRaw)
+	now := time.Now().Unix()
+	maxFutureSeconds := int64(MaxFutureSkew / time.Second)
+	ttlSeconds := int64(conf.TTL / time.Second)
+	if tsVal > now {
+		if tsVal-now > maxFutureSeconds {
+			log.Fatal("Stream rejected: timestamp too far in the future")
+		}
+	} else {
+		if now-tsVal > ttlSeconds {
+			log.Fatal("Stream rejected: timestamp too old")
+		}
+	}
+
+	if !bytes.Equal(conf.EncryptSkID, encryptSkID) {
+		wEncryptSkIDStr := binary.LittleEndian.Uint64(conf.EncryptSkID)
+		encryptSkIDStr := binary.LittleEndian.Uint64(encryptSkID)
+		log.Fatalf("Configured key ID is %v but stream was encrypted using key ID %v",
+			wEncryptSkIDStr, encryptSkIDStr)
+	}
+
+	streamKey := deriveStreamKey(conf.EncryptSk, ts, encryptSkID, noncePrefix, cidBytes)
+	aead, err := chacha20poly1305.NewX(streamKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	cidBind := computeCIDBind(conf.EncryptSk, cidBytes)
+	transcript := newTranscriptHash()
+	transcript.Write([]byte{client.version})
+	transcript.Write([]byte{'P'})
+	transcript.Write(ts)
+	transcript.Write(encryptSkID)
+	transcript.Write(noncePrefix)
+	transcript.Write(cidBind)
+
+	_ = writer
+
+	var chunkIndex uint64
+	var totalBytes uint64
+	pullStart := time.Now()
+	maxBytes := DefaultMaxStreamBytes
+	if conf.MaxStreamBytes > 0 && conf.MaxStreamBytes < maxBytes {
+		maxBytes = conf.MaxStreamBytes
+	}
+	maxDur := DefaultMaxStreamDur
+	if conf.MaxStreamDuration > 0 && conf.MaxStreamDuration < maxDur {
+		maxDur = conf.MaxStreamDuration
+	}
+
+	for {
+		client.conn.SetDeadline(time.Now().Add(conf.DataTimeout))
+		var chunkLen uint32
+		if err := binary.Read(reader, binary.LittleEndian, &chunkLen); err != nil {
+			log.Fatal("Stream: failed to read chunk length: ", err)
+		}
+
+		if chunkLen == 0 {
+			sig := make([]byte, 64)
+			if _, err := io.ReadFull(reader, sig); err != nil {
+				log.Fatal("Stream: failed to read signature: ", err)
+			}
+			transcriptDigest := transcript.Sum(nil)
+			if !ed25519.Verify(conf.SignPk, transcriptDigest, sig) {
+				log.Fatal("Stream signature verification failed")
+			}
+			return
+		}
+
+		if chunkLen > MaxChunk {
+			log.Fatalf("Stream: chunk too large (%v > %v)", chunkLen, MaxChunk)
+		}
+
+		sealedLen := int(chunkLen) + 16
+		totalBytes += uint64(sealedLen)
+		if totalBytes > maxBytes {
+			log.Fatal("Stream rejected: exceeded maximum stream size")
+		}
+		if time.Since(pullStart) > maxDur {
+			log.Fatal("Stream rejected: exceeded maximum stream duration")
+		}
+		sealed := make([]byte, sealedLen)
+		client.conn.SetDeadline(time.Now().Add(conf.DataTimeout))
+		if _, err := io.ReadFull(reader, sealed); err != nil {
+			log.Fatal("Stream: failed to read chunk data: ", err)
+		}
+
+		nonce := deriveChunkNonce(noncePrefix, chunkIndex)
+		plain, err := aead.Open(nil, nonce, sealed, nil)
+		if err != nil {
+			log.Fatal("Stream: AEAD authentication failed for chunk ", chunkIndex)
+		}
+
+		lenBuf := make([]byte, 4)
+		binary.LittleEndian.PutUint32(lenBuf, chunkLen)
+		idxBuf := make([]byte, 8)
+		binary.LittleEndian.PutUint64(idxBuf, chunkIndex)
+		transcript.Write(idxBuf)
+		transcript.Write(lenBuf)
+		transcript.Write(sealed)
+
+		if _, err := os.Stdout.Write(plain); err != nil {
+			log.Fatal("Stream: write error: ", err)
+		}
+		chunkIndex++
+	}
+}
+
+func RunClient(conf Conf, isCopy bool, isMove bool, isPush bool, isPull bool, cid string) {
 	conn, err := net.DialTimeout("tcp", conf.Connect, conf.Timeout)
 	if err != nil {
-		log.Fatal(fmt.Sprintf("Unable to connect to %v - Is a Piknik server running on that host?",
-			conf.Connect))
+		log.Fatalf("Unable to connect to %v - Is a Piknik server running on that host?",
+			conf.Connect)
 	}
 	defer conn.Close()
+
+	clientVersion := byte(7)
+	if !isPush && !isPull {
+		clientVersion = byte(6)
+	}
 
 	conn.SetDeadline(time.Now().Add(conf.Timeout))
 	reader, writer := bufio.NewReader(conn), bufio.NewWriter(conn)
@@ -175,7 +413,7 @@ func RunClient(conf Conf, isCopy bool, isMove bool) {
 		conn:    conn,
 		reader:  reader,
 		writer:  writer,
-		version: DefaultClientVersion,
+		version: clientVersion,
 	}
 	r := make([]byte, 32)
 	if _, err = rand.Read(r); err != nil {
@@ -197,8 +435,8 @@ func RunClient(conf Conf, isCopy bool, isMove bool) {
 		}
 	}
 	if serverVersion := rbuf[0]; serverVersion != client.version {
-		log.Fatal(fmt.Sprintf("Incompatible server version (client version: %v - server version: %v)",
-			client.version, serverVersion))
+		log.Fatalf("Incompatible server version (client version: %v - server version: %v)",
+			client.version, serverVersion)
 	}
 	r2 := rbuf[1:33]
 	h1 := rbuf[33:65]
@@ -208,6 +446,10 @@ func RunClient(conf Conf, isCopy bool, isMove bool) {
 	}
 	if isCopy {
 		client.copyOperation(h1)
+	} else if isPush {
+		client.pushStreamOperation(h1, cid)
+	} else if isPull {
+		client.pullStreamOperation(h1, cid)
 	} else {
 		client.pasteOperation(h1, isMove)
 	}

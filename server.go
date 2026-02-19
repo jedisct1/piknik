@@ -15,7 +15,6 @@ import (
 	"golang.org/x/crypto/ed25519"
 )
 
-// ClientConnection - A client connection
 type ClientConnection struct {
 	conf          Conf
 	conn          net.Conn
@@ -24,7 +23,6 @@ type ClientConnection struct {
 	clientVersion byte
 }
 
-// StoredContent - Paste buffer
 type StoredContent struct {
 	sync.RWMutex
 
@@ -33,11 +31,30 @@ type StoredContent struct {
 	ciphertextWithEncryptSkIDAndNonce []byte
 }
 
+type subscriber struct {
+	ch   chan []byte
+	done chan struct{}
+}
+
+type StreamHub struct {
+	mu         sync.Mutex
+	pushActive bool
+	pullers    map[uint64]*subscriber
+	nextID     uint64
+	waitCh     chan struct{}
+}
+
 var (
 	storedContent  StoredContent
 	trustedClients TrustedClients
 	clientsCount   = uint64(0)
+	streamHub      StreamHub
 )
+
+func initStreamHub() {
+	streamHub.pullers = make(map[uint64]*subscriber)
+	streamHub.waitCh = make(chan struct{})
+}
 
 func (cnx *ClientConnection) getOperation(h1 []byte, isMove bool) {
 	conf, reader, writer := cnx.conf, cnx.reader, cnx.writer
@@ -136,6 +153,199 @@ func (cnx *ClientConnection) storeOperation(h1 []byte) {
 	}
 }
 
+func (cnx *ClientConnection) pullStreamOperation(h1 []byte) {
+	conf, reader, writer := cnx.conf, cnx.reader, cnx.writer
+	rbuf := make([]byte, 32)
+	if _, err := io.ReadFull(reader, rbuf); err != nil {
+		log.Print(err)
+		return
+	}
+	h2 := rbuf
+	opcode := byte('L')
+	wh2 := auth2get(conf, cnx.clientVersion, h1, opcode)
+	if subtle.ConstantTimeCompare(wh2, h2) != 1 {
+		return
+	}
+
+	streamHub.mu.Lock()
+	if streamHub.pushActive {
+		streamHub.mu.Unlock()
+		log.Print("Stream pull rejected: stream already active")
+		return
+	}
+	if uint(len(streamHub.pullers)) >= conf.MaxWaitingPullers {
+		streamHub.mu.Unlock()
+		log.Print("Stream pull rejected: too many waiting pullers")
+		return
+	}
+	sub := &subscriber{
+		ch:   make(chan []byte, 64),
+		done: make(chan struct{}),
+	}
+	id := streamHub.nextID
+	streamHub.nextID++
+	streamHub.pullers[id] = sub
+	waitCh := streamHub.waitCh
+	streamHub.mu.Unlock()
+
+	defer func() {
+		streamHub.mu.Lock()
+		delete(streamHub.pullers, id)
+		streamHub.mu.Unlock()
+		close(sub.done)
+	}()
+
+	_ = reader
+	waitTimeout := conf.TTL
+	if waitTimeout < time.Hour {
+		waitTimeout = time.Hour
+	}
+	cnx.conn.SetDeadline(time.Now().Add(waitTimeout))
+
+	select {
+	case <-waitCh:
+	case <-sub.done:
+		return
+	case <-time.After(waitTimeout):
+		log.Printf("Puller %v: wait timeout expired", id)
+		return
+	}
+
+	cnx.conn.SetDeadline(time.Now().Add(conf.DataTimeout))
+	for frame := range sub.ch {
+		if _, err := writer.Write(frame); err != nil {
+			log.Printf("Puller %v write error: %v", id, err)
+			return
+		}
+		if err := writer.Flush(); err != nil {
+			log.Printf("Puller %v flush error: %v", id, err)
+			return
+		}
+		cnx.conn.SetDeadline(time.Now().Add(conf.DataTimeout))
+	}
+}
+
+func (cnx *ClientConnection) pushStreamOperation(h1 []byte) {
+	conf, reader := cnx.conf, cnx.reader
+	rbuf := make([]byte, 32)
+	if _, err := io.ReadFull(reader, rbuf); err != nil {
+		log.Print(err)
+		return
+	}
+	h2 := rbuf
+	opcode := byte('P')
+	wh2 := auth2get(conf, cnx.clientVersion, h1, opcode)
+	if subtle.ConstantTimeCompare(wh2, h2) != 1 {
+		return
+	}
+
+	streamHub.mu.Lock()
+	if streamHub.pushActive {
+		streamHub.mu.Unlock()
+		log.Print("Stream push rejected: another push already active")
+		return
+	}
+	streamHub.pushActive = true
+
+	snapshot := make(map[uint64]*subscriber)
+	for id, sub := range streamHub.pullers {
+		snapshot[id] = sub
+	}
+
+	oldWaitCh := streamHub.waitCh
+	streamHub.waitCh = make(chan struct{})
+	streamHub.mu.Unlock()
+
+	close(oldWaitCh)
+
+	defer func() {
+		for _, sub := range snapshot {
+			close(sub.ch)
+		}
+		streamHub.mu.Lock()
+		streamHub.pushActive = false
+		streamHub.mu.Unlock()
+	}()
+
+	relay := func(frame []byte) {
+		for id, sub := range snapshot {
+			select {
+			case sub.ch <- frame:
+			case <-sub.done:
+				delete(snapshot, id)
+			default:
+				log.Printf("Puller %v too slow, dropping", id)
+				delete(snapshot, id)
+				close(sub.ch)
+			}
+		}
+	}
+
+	header := make([]byte, 32)
+	cnx.conn.SetDeadline(time.Now().Add(conf.DataTimeout))
+	if _, err := io.ReadFull(reader, header); err != nil {
+		log.Print("Stream push: failed to read header: ", err)
+		return
+	}
+	relay(header)
+
+	var streamStart time.Time
+	if conf.MaxStreamDuration > 0 {
+		streamStart = time.Now()
+	}
+	var totalBytes uint64
+
+	for {
+		var chunkLen uint32
+		cnx.conn.SetDeadline(time.Now().Add(conf.DataTimeout))
+		if err := binary.Read(reader, binary.LittleEndian, &chunkLen); err != nil {
+			log.Print("Stream push: failed to read chunk length: ", err)
+			return
+		}
+
+		lenBuf := make([]byte, 4)
+		binary.LittleEndian.PutUint32(lenBuf, chunkLen)
+
+		if chunkLen == 0 {
+			sig := make([]byte, 64)
+			if _, err := io.ReadFull(reader, sig); err != nil {
+				log.Print("Stream push: failed to read signature: ", err)
+				return
+			}
+			relay(append(lenBuf, sig...))
+			return
+		}
+
+		if chunkLen > MaxChunk {
+			log.Printf("Stream push: chunk too large (%v > %v)", chunkLen, MaxChunk)
+			return
+		}
+
+		sealedLen := uint32(chunkLen) + 16
+		totalBytes += uint64(sealedLen)
+		if conf.MaxStreamBytes > 0 && totalBytes > conf.MaxStreamBytes {
+			log.Print("Stream push: exceeded MaxStreamBytes")
+			return
+		}
+		if conf.MaxStreamDuration > 0 && time.Since(streamStart) > conf.MaxStreamDuration {
+			log.Print("Stream push: exceeded MaxStreamDuration")
+			return
+		}
+
+		sealed := make([]byte, sealedLen)
+		cnx.conn.SetDeadline(time.Now().Add(conf.DataTimeout))
+		if _, err := io.ReadFull(reader, sealed); err != nil {
+			log.Print("Stream push: failed to read chunk data: ", err)
+			return
+		}
+
+		frame := make([]byte, 4+len(sealed))
+		copy(frame, lenBuf)
+		copy(frame[4:], sealed)
+		relay(frame)
+	}
+}
+
 func handleClientConnection(conf Conf, conn net.Conn) {
 	defer conn.Close()
 	reader, writer := bufio.NewReader(conn), bufio.NewWriter(conn)
@@ -150,7 +360,7 @@ func handleClientConnection(conf Conf, conn net.Conn) {
 		return
 	}
 	cnx.clientVersion = rbuf[0]
-	if cnx.clientVersion != 6 {
+	if cnx.clientVersion != 6 && cnx.clientVersion != 7 {
 		log.Print("Unsupported client version - Please run the same version on the server and on the client")
 		return
 	}
@@ -185,10 +395,21 @@ func handleClientConnection(conf Conf, conn net.Conn) {
 		cnx.getOperation(h1, true)
 	case byte('S'):
 		cnx.storeOperation(h1)
+	case byte('P'):
+		if cnx.clientVersion < 7 {
+			log.Print("Stream push requires protocol version 7")
+			return
+		}
+		cnx.pushStreamOperation(h1)
+	case byte('L'):
+		if cnx.clientVersion < 7 {
+			log.Print("Stream pull requires protocol version 7")
+			return
+		}
+		cnx.pullStreamOperation(h1)
 	}
 }
 
-// TrustedClients - Clients IPs having recently performed a successful handshake
 type TrustedClients struct {
 	sync.RWMutex
 
@@ -243,8 +464,8 @@ func maybeAcceptClient(conf Conf, conn net.Conn) {
 	go acceptClient(conf, conn)
 }
 
-// RunServer - run a server
 func RunServer(conf Conf) {
+	initStreamHub()
 	go handleSignals()
 	listen, err := net.Listen("tcp", conf.Listen)
 	if err != nil {

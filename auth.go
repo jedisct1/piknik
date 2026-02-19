@@ -1,6 +1,11 @@
 package main
 
-import blake2b "github.com/minio/blake2b-simd"
+import (
+	"encoding/binary"
+	"hash"
+
+	blake2b "github.com/minio/blake2b-simd"
+)
 
 func auth0(conf Conf, clientVersion byte, r []byte) []byte {
 	hf0, _ := blake2b.New(&blake2b.Config{
@@ -91,4 +96,51 @@ func auth3store(conf Conf, h2 []byte) []byte {
 	h3 := hf3.Sum(nil)
 
 	return h3
+}
+
+func deriveStreamKey(encryptSk []byte, ts []byte, encryptSkID []byte, noncePrefix []byte, cidBytes []byte) []byte {
+	hf, _ := blake2b.New(&blake2b.Config{
+		Key:    encryptSk,
+		Person: []byte("pkv7-stream-key"),
+		Size:   32,
+	})
+	hf.Write(ts)
+	hf.Write(encryptSkID)
+	hf.Write(noncePrefix)
+	cidLen := make([]byte, 2)
+	binary.LittleEndian.PutUint16(cidLen, uint16(len(cidBytes)))
+	hf.Write(cidLen)
+	hf.Write(cidBytes)
+	return hf.Sum(nil)
+}
+
+func computeCIDBind(encryptSk []byte, cidBytes []byte) []byte {
+	if len(cidBytes) == 0 {
+		return make([]byte, 32)
+	}
+	hf, _ := blake2b.New(&blake2b.Config{
+		Key:    encryptSk,
+		Person: []byte("pk-v7-cid-bind"),
+		Size:   32,
+	})
+	cidLen := make([]byte, 2)
+	binary.LittleEndian.PutUint16(cidLen, uint16(len(cidBytes)))
+	hf.Write(cidLen)
+	hf.Write(cidBytes)
+	return hf.Sum(nil)
+}
+
+func newTranscriptHash() hash.Hash {
+	hf, _ := blake2b.New(&blake2b.Config{
+		Person: []byte("pk-v7-transcript"),
+		Size:   32,
+	})
+	return hf
+}
+
+func deriveChunkNonce(noncePrefix []byte, chunkIndex uint64) []byte {
+	nonce := make([]byte, 24)
+	copy(nonce, noncePrefix)
+	binary.LittleEndian.PutUint64(nonce[16:], chunkIndex)
+	return nonce
 }

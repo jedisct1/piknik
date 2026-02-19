@@ -16,46 +16,52 @@ import (
 )
 
 const (
-	// Version - Piknik version
-	Version = "0.10.2"
-	// DomainStr - BLAKE2 domain (personalization)
-	DomainStr = "PK"
-	// DefaultListen - Default value for the Listen parameter
-	DefaultListen = "0.0.0.0:8075"
-	// DefaultConnect - Default value for the Connect parameter
+	Version        = "0.11.0"
+	DomainStr      = "PK"
+	DefaultListen  = "0.0.0.0:8075"
 	DefaultConnect = "127.0.0.1:8075"
-	// DefaultTTL - Time after the clipboard is considered obsolete, in seconds
-	DefaultTTL = 7 * 24 * time.Hour
+	DefaultTTL     = 7 * 24 * time.Hour
+
+	MaxChunk              = 65536
+	MaxFutureSkew         = time.Hour
+	DefaultMaxWaitPullers = 100
+	DefaultMaxStreamBytes = uint64(10 * 1024 * 1024 * 1024)
+	DefaultMaxStreamDur   = 24 * time.Hour
 )
 
 type tomlConfig struct {
-	Connect     string
-	Listen      string
-	EncryptSk   string
-	EncryptSkID uint64
-	Psk         string
-	SignPk      string
-	SignSk      string
-	Timeout     uint
-	DataTimeout uint
-	TTL         uint
+	Connect           string
+	Listen            string
+	EncryptSk         string
+	EncryptSkID       uint64
+	Psk               string
+	SignPk            string
+	SignSk            string
+	Timeout           uint
+	DataTimeout       uint
+	TTL               uint
+	MaxStreamBytes    uint64
+	MaxStreamDuration uint
+	MaxWaitingPullers uint
 }
 
-// Conf - Shared config
 type Conf struct {
-	Connect        string
-	Listen         string
-	MaxClients     uint64
-	MaxLen         uint64
-	EncryptSk      []byte
-	EncryptSkID    []byte
-	Psk            []byte
-	SignPk         []byte
-	SignSk         []byte
-	Timeout        time.Duration
-	DataTimeout    time.Duration
-	TTL            time.Duration
-	TrustedIPCount uint64
+	Connect           string
+	Listen            string
+	MaxClients        uint64
+	MaxLen            uint64
+	EncryptSk         []byte
+	EncryptSkID       []byte
+	Psk               []byte
+	SignPk            []byte
+	SignSk            []byte
+	Timeout           time.Duration
+	DataTimeout       time.Duration
+	TTL               time.Duration
+	TrustedIPCount    uint64
+	MaxStreamBytes    uint64
+	MaxStreamDuration time.Duration
+	MaxWaitingPullers uint
 }
 
 func expandConfigFile(path string) string {
@@ -105,6 +111,9 @@ func main() {
 	isCopy := flag.Bool("copy", false, "store content (copy)")
 	_ = flag.Bool("paste", false, "retrieve the content (paste) - this is the default action")
 	isMove := flag.Bool("move", false, "retrieve and delete the clipboard content")
+	isPush := flag.Bool("push", false, "stream stdin to connected pullers")
+	isPull := flag.Bool("pull", false, "wait and receive one stream to stdout")
+	cidFlag := flag.String("cid", "", "content identifier label for stream binding")
 	isServer := flag.Bool("server", false, "start a server")
 	isGenKeys := flag.Bool("genkeys", false, "generate keys")
 	isDeterministic := flag.Bool("password", false, "derive the keys from a password (default=random keys)")
@@ -213,10 +222,48 @@ func main() {
 	if conf.TrustedIPCount < 1 {
 		conf.TrustedIPCount = 1
 	}
+	conf.MaxStreamBytes = DefaultMaxStreamBytes
+	if tomlConf.MaxStreamBytes > 0 {
+		conf.MaxStreamBytes = tomlConf.MaxStreamBytes
+	}
+	conf.MaxStreamDuration = DefaultMaxStreamDur
+	if tomlConf.MaxStreamDuration > 0 {
+		conf.MaxStreamDuration = time.Duration(tomlConf.MaxStreamDuration) * time.Second
+	}
+	conf.MaxWaitingPullers = DefaultMaxWaitPullers
+	if tomlConf.MaxWaitingPullers > 0 {
+		conf.MaxWaitingPullers = tomlConf.MaxWaitingPullers
+	}
+
+	modeCount := 0
+	if *isCopy {
+		modeCount++
+	}
+	if *isMove {
+		modeCount++
+	}
+	if *isPush {
+		modeCount++
+	}
+	if *isPull {
+		modeCount++
+	}
+	if modeCount > 1 {
+		log.Fatal("Only one of -copy, -move, -push, -pull can be specified")
+	}
+
+	cid := *cidFlag
+	if cid == "" {
+		cid = os.Getenv("PIKNIK_CONTENT_ID")
+	}
+	if len(cid) > 128 {
+		log.Fatal("Content ID (-cid) must be at most 128 bytes")
+	}
+
 	confCheck(conf, *isServer)
 	if *isServer {
 		RunServer(conf)
 	} else {
-		RunClient(conf, *isCopy, *isMove)
+		RunClient(conf, *isCopy, *isMove, *isPush, *isPull, cid)
 	}
 }

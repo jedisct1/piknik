@@ -36,13 +36,13 @@ Boom.
 Obviously, it can be used to transfer files as well:
 
 ```sh
-$ pkc < kitten.gif
-$ pkp > kittencopy.gif
+pkc < kitten.gif
+pkp > kittencopy.gif
 ```
 
 ```sh
-$ tar cvf - *.txt | pkc
-$ pkp | tar xvf -
+tar cvf - *.txt | pkc
+pkp | tar xvf -
 ```
 
 In order to work around firewalls/NAT gatways, the clipboard content transits over TCP via a staging server.
@@ -56,22 +56,22 @@ Data can be shared between different operating systems, including MacOS, Linux a
 ### Option 1: use precompiled binaries
 
 Precompiled binaries for MacOS, Linux (i386, x86_64, ARM), Win32, Win64, DragonflyBSD, NetBSD and FreeBSD can be downloaded here:
-https://github.com/jedisct1/piknik/releases/latest
+<https://github.com/jedisct1/piknik/releases/latest>
 
 ### Option 2 (on MacOS): use Homebrew
 
 ```sh
-$ brew install piknik
+brew install piknik
 ```
 
 ### Option 3: compile the source code
 
 This project is written in Go.
 
-Go >= 1.11 is required, as well as the following incantation:
+Go >= 1.24 is required, as well as the following incantation:
 
 ```sh
-$ go build
+go build
 ```
 
 The `piknik` executable file should then be available in current path.
@@ -81,7 +81,7 @@ The `piknik` executable file should then be available in current path.
 Piknik requires a bunch of keys. Generate them all with
 
 ```sh
-$ piknik -genkeys
+piknik -genkeys
 ```
 
 This generates random keys (highly recommended).
@@ -91,7 +91,7 @@ You will need to copy parts (not all!) of that command's output to a `piknik.tom
 A temporary alternative is to derive the keys from a password. The same password will always generate the same set of keys, on all platforms. In order to do so, add the `-password` switch:
 
 ```sh
-$ piknik -genkeys -password
+piknik -genkeys -password
 ```
 
 The output of the `-genkeys` command is all you need to build a configuration file.
@@ -108,6 +108,11 @@ Sample configuration file for a staging server:
 Listen = "0.0.0.0:8075"         # Edit appropriately
 Psk    = "bf82bab384697243fbf616d3428477a563e33268f0f2307dd14e7245dd8c995d"
 SignPk = "0c41ca9b0a1b5fe4daae789534e72329a93a352a6ad73d6f1d368d8eff37271c"
+
+# Optional streaming limits (defaults shown):
+# MaxStreamBytes    = 10737418240   # 10 GiB
+# MaxStreamDuration = 86400         # 24 hours, in seconds
+# MaxWaitingPullers = 100
 ```
 
 Sample configuration file for clients:
@@ -131,7 +136,7 @@ Don't like the default config file location? Use the `-config` switch.
 Run the following command on the staging server (or use `runit`, `openrc`, `systemd`, whatever to run it as a background service):
 
 ```sh
-$ piknik -server
+piknik -server
 ```
 
 The staging server has to be publicly accessible. At the very least, it must be reachable by the clients over TCP with the port you specify in the configuration.
@@ -141,20 +146,20 @@ Commands without a valid API key (present in the client configuration file) will
 ## Usage (clients)
 
 ```sh
-$ piknik -copy
+piknik -copy
 ```
 
 Copy the standard input to the clipboard.
 
 ```sh
-$ piknik -paste
+piknik -paste
 ```
 
 Retrieve the content of the clipboard and spit it to the standard output.
 `-paste` is actually a no-op. This is the default action if `-copy` was not specified.
 
 ```sh
-$ piknik -move
+piknik -move
 ```
 
 Retrieve the content of the clipboard, spit it to the standard output
@@ -164,6 +169,49 @@ Only one lucky client will have the privilege to see the content.
 That's it.
 
 Feed it anything. Text, binary data, whatever. As long as it fits in memory.
+
+## Streaming mode
+
+Piknik also supports real-time streaming between hosts. One or more receivers connect and wait, then a sender streams data that all receivers get simultaneously.
+
+Start a receiver on one or more hosts:
+
+```sh
+piknik -pull > received_data
+```
+
+Then stream from the sender:
+
+```sh
+piknik -push < data_to_send
+```
+
+Or pipe a live process:
+
+```sh
+tar cf - /important/stuff | piknik -push
+```
+
+All connected receivers get the same stream. Only one sender can be active at a time.
+
+Streaming works like copy/paste: everything is end-to-end encrypted and signed. The server just relays opaque bytes.
+
+### Content identifiers
+
+The optional `-cid` flag binds a label into the stream's key derivation, so both sides must agree on the same value for decryption to succeed:
+
+```sh
+piknik -pull -cid "deploy-v42" > payload    # receiver
+piknik -push -cid "deploy-v42" < payload    # sender
+```
+
+The label is never sent over the wire. If the sender and receiver use different labels, the receiver will fail with a decryption error.
+
+The `PIKNIK_CONTENT_ID` environment variable can be used instead of `-cid`.
+
+### Trust model
+
+Stream output should be considered tentative until the process exits with code 0. A zero exit status means all chunks were authenticated via AEAD and the complete stream signature was verified. A non-zero exit means the stream was incomplete or tampered with. Pipelines should check the exit status before trusting the output.
 
 ## Suggested shell aliases
 
@@ -201,6 +249,12 @@ pkfr() {
 
 # pkpr : extract clipboard content sent using the pkfr command
 alias pkpr='piknik -paste | tar xzpvf -'
+
+# pkpush : stream stdin to connected pullers
+alias pkpush='piknik -push'
+
+# pkpull : wait and receive a stream to stdout
+alias pkpull='piknik -pull'
 ```
 
 ## Piknik integration in third-party packages
@@ -226,7 +280,7 @@ Use it to:
 
 ## Protocol
 
-Common definitions:
+### Common definitions
 
 ```text
 k: API key
@@ -234,17 +288,17 @@ ek: 256-bit symmetric encryption key
 ekid: encryption key id encoded as a 64-bit little endian integer
 m: plaintext
 ct: XChaCha20 ek,n (m)
-Hk,s: BLAKE2b(domain="SK", key=k, salt=s, size=32)
+Hk,s: BLAKE2b(domain="PK", key=k, salt=s, size=32)
 Len(x): x encoded as a 64-bit little endian unsigned integer
 n: random 192-bit nonce
 r: random 256-bit client nonce
 r': random 256-bit server nonce
 ts: Unix timestamp as a 64-bit little endian integer
 Sig: Ed25519
-v: 6
+v: 6 (copy/paste/move), 7 (streaming)
 ```
 
-Copy:
+### Copy (v6)
 
 ```text
 -> v || r || h0
@@ -260,7 +314,7 @@ h2 := Hk,2(h1 || 'S' || ts || s)
 <- Hk,3(h2)
 ```
 
-Move/Paste:
+### Move/Paste (v6)
 
 ```text
 Move:  opcode := 'M'
@@ -278,6 +332,70 @@ h2 := Hk,2(h1 || opcode)
 <- Hk,3(h2 || ts || s) || Len(ekid || n || ct) || ts || s || ekid || n || ct
 s := Sig(ekid || n || ct)
 ```
+
+### Streaming (v7)
+
+Streaming uses protocol version 7. The handshake is the same as v6, but the
+opcode is `P` (push) or `L` (pull) and the data flow is chunked.
+
+Additional definitions:
+
+```text
+AEAD: XChaCha20-Poly1305
+np: random 128-bit nonce prefix (also serves as stream identifier)
+streamKey: BLAKE2b-256(key=ek, person="pkv7-stream-key",
+           input=ts || ekid || np || uint16(len(cid)) || cid)
+chunkNonce(i): np || uint64_le(i)     (24 bytes)
+cidBind: BLAKE2b-256(key=ek, person="pk-v7-cid-bind",
+         input=uint16(len(cid)) || cid)    if cid present
+         32 zero bytes                     if cid absent
+```
+
+Push (sender):
+
+```text
+-> v=7 || r || h0                       (handshake)
+<- v=7 || r' || h1
+
+-> 'P' || h2                            (opcode auth)
+h2 := Hk,2(h1 || 'P')
+
+-> ts || ekid || np                     (stream header, 32 bytes)
+
+-> uint32_le(len) || AEAD.Seal(streamKey, chunkNonce(0), chunk0)
+-> uint32_le(len) || AEAD.Seal(streamKey, chunkNonce(1), chunk1)
+...                                     (data frames, len=1..65536)
+
+-> uint32_le(0) || Sig(transcriptHash)  (end frame)
+```
+
+Pull (receiver):
+
+```text
+-> v=7 || r || h0                       (handshake)
+<- v=7 || r' || h1
+
+-> 'L' || h2                            (opcode auth, then wait)
+h2 := Hk,2(h1 || 'L')
+
+<- ts || ekid || np                     (stream header)
+<- uint32_le(len) || sealed_chunk       (data frames)
+...
+<- uint32_le(0) || signature            (end frame)
+```
+
+The transcript hash covers:
+
+```text
+transcriptHash := BLAKE2b-256(person="pk-v7-transcript",
+    v(1) || 'P'(1) || ts(8) || ekid(8) || np(16) || cidBind(32)
+    || for each chunk: chunkIndex(8) || chunkLen(4) || sealedChunk(len+16)
+)
+```
+
+All integers are little-endian. The content identifier (`-cid`) is never
+transmitted on the wire; it is bound into key derivation and the transcript
+hash so that both sides must agree on the same label.
 
 ## License
 
