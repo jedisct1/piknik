@@ -169,6 +169,24 @@ func (client *Client) pushStreamOperation(h1 []byte, cid string) {
 		log.Fatal(err)
 	}
 
+	client.conn.SetDeadline(time.Now().Add(conf.Timeout))
+	statusBuf := make([]byte, 1)
+	if _, err := io.ReadFull(reader, statusBuf); err != nil {
+		if err == io.ErrUnexpectedEOF {
+			log.Fatal("The server may be running an incompatible version")
+		}
+		log.Fatal(err)
+	}
+	switch statusBuf[0] {
+	case 0x01:
+	case 0x00:
+		log.Fatal("No clients are waiting to receive the stream")
+	case 0x02:
+		log.Fatal("Another push is already active")
+	default:
+		log.Fatal("Server rejected the stream")
+	}
+
 	cidBytes := []byte(cid)
 
 	ts := make([]byte, 8)
@@ -251,7 +269,6 @@ func (client *Client) pushStreamOperation(h1 []byte, cid string) {
 		log.Fatal(err)
 	}
 
-	_ = reader
 	if IsTerminal(int(syscall.Stderr)) {
 		os.Stderr.WriteString("Stream sent\n")
 	}

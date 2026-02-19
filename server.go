@@ -226,7 +226,7 @@ func (cnx *ClientConnection) pullStreamOperation(h1 []byte) {
 }
 
 func (cnx *ClientConnection) pushStreamOperation(h1 []byte) {
-	conf, reader := cnx.conf, cnx.reader
+	conf, reader, writer := cnx.conf, cnx.reader, cnx.writer
 	rbuf := make([]byte, 32)
 	if _, err := io.ReadFull(reader, rbuf); err != nil {
 		log.Print(err)
@@ -243,6 +243,8 @@ func (cnx *ClientConnection) pushStreamOperation(h1 []byte) {
 	if streamHub.pushActive {
 		streamHub.mu.Unlock()
 		log.Print("Stream push rejected: another push already active")
+		writer.WriteByte(0x02)
+		writer.Flush()
 		return
 	}
 	streamHub.pushActive = true
@@ -250,6 +252,15 @@ func (cnx *ClientConnection) pushStreamOperation(h1 []byte) {
 	snapshot := make(map[uint64]*subscriber)
 	for id, sub := range streamHub.pullers {
 		snapshot[id] = sub
+	}
+
+	if len(snapshot) == 0 {
+		streamHub.pushActive = false
+		streamHub.mu.Unlock()
+		log.Print("Stream push rejected: no pullers waiting")
+		writer.WriteByte(0x00)
+		writer.Flush()
+		return
 	}
 
 	oldWaitCh := streamHub.waitCh
@@ -267,16 +278,18 @@ func (cnx *ClientConnection) pushStreamOperation(h1 []byte) {
 		streamHub.mu.Unlock()
 	}()
 
+	writer.WriteByte(0x01)
+	if err := writer.Flush(); err != nil {
+		log.Print("Stream push: failed to send accept status: ", err)
+		return
+	}
+
 	relay := func(frame []byte) {
 		for id, sub := range snapshot {
 			select {
 			case sub.ch <- frame:
 			case <-sub.done:
 				delete(snapshot, id)
-			default:
-				log.Printf("Puller %v too slow, dropping", id)
-				delete(snapshot, id)
-				close(sub.ch)
 			}
 		}
 	}

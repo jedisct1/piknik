@@ -360,6 +360,9 @@ Push (sender):
 -> 'P' || h2                            (opcode auth)
 h2 := Hk,2(h1 || 'P')
 
+<- status                               (1 byte: 0x01=accepted,
+                                          0x00=no pullers, 0x02=busy)
+
 -> ts || ekid || np                     (stream header, 32 bytes)
 
 -> uint32_le(len) || AEAD.Seal(streamKey, chunkNonce(0), chunk0)
@@ -368,6 +371,10 @@ h2 := Hk,2(h1 || 'P')
 
 -> uint32_le(0) || Sig(transcriptHash)  (end frame)
 ```
+
+The server rejects the push immediately if no pullers are waiting or another
+push is already active. The sender receives a distinct status code for each
+case and can report a meaningful error without transmitting any data.
 
 Pull (receiver):
 
