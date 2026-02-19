@@ -1,5 +1,4 @@
 //go:build darwin || dragonfly || freebsd || (linux && !appengine) || netbsd || openbsd || windows
-// +build darwin dragonfly freebsd linux,!appengine netbsd openbsd windows
 
 package main
 
