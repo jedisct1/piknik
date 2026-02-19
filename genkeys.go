@@ -34,8 +34,8 @@ func (DeterministicRand) Read(p []byte) (n int, err error) {
 	reqLen := len(p)
 	left := len(deterministicRand.pool) - deterministicRand.pos
 	if left < reqLen {
-		log.Panic(fmt.Sprintf("rand pool exhaustion (%v left, %v needed)",
-			left, reqLen))
+		log.Panicf("rand pool exhaustion (%v left, %v needed)",
+			left, reqLen)
 	}
 	copy(p, deterministicRand.pool[deterministicRand.pos:deterministicRand.pos+reqLen])
 	for i := 0; i < reqLen; i++ {

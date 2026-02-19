@@ -6,7 +6,6 @@ import (
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/binary"
-	"fmt"
 	"io"
 	"log"
 	"math"
