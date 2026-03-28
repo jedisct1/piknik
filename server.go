@@ -470,6 +470,9 @@ func acceptClient(conf Conf, conn net.Conn) {
 
 func maybeAcceptClient(conf Conf, conn net.Conn) {
 	conn.SetDeadline(time.Now().Add(conf.Timeout))
+	if tcpConn, ok := conn.(*net.TCPConn); ok {
+		tcpConn.SetLinger(0)
+	}
 	remoteIP := conn.RemoteAddr().(*net.TCPAddr).IP
 	for {
 		count := atomic.LoadUint64(&clientsCount)
